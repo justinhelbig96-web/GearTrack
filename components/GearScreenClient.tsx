@@ -126,16 +126,18 @@ function SlotTile({
   targetAffixes, targetItemName, onUpload, onSelect, selected,
 }: SlotTileProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [imgOpen, setImgOpen] = useState(false)
   const hasItem  = !!item
   const hasBuildTarget = !!targetItemName && !hasItem
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) onUpload(slot, file)
+    if (file) { onUpload(slot, file); setImgOpen(false) }
     e.target.value = ''
   }
 
   const handleClick = () => {
+    if (imageUrl) { setImgOpen(true); onSelect(slot); return }
     onSelect(slot)
     if (!hasItem && !uploading) inputRef.current?.click()
   }
@@ -235,18 +237,14 @@ function SlotTile({
           </div>
         )}
 
-        {/* Hover replace overlay */}
+        {/* Hover overlay — click to view */}
         {hasItem && !uploading && (
           <div
             className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: 'rgba(0,0,0,0.68)' }}
-            onClick={e => { e.stopPropagation(); inputRef.current?.click() }}
+            style={{ background: 'rgba(0,0,0,0.5)', pointerEvents: 'none' }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-            <span style={{ color: '#c8a84b', fontSize: '0.52rem', fontFamily: D4, letterSpacing: '0.1em', marginTop: 4 }}>Replace</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <span style={{ color: '#c8a84b', fontSize: '0.5rem', fontFamily: D4, letterSpacing: '0.1em', marginTop: 4 }}>View</span>
           </div>
         )}
 
@@ -271,6 +269,34 @@ function SlotTile({
       }}>
         {label}
       </span>
+
+      {/* ── Lightbox modal ── */}
+      {imgOpen && imageUrl && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.93)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setImgOpen(false)}
+        >
+          <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
+            <img
+              src={imageUrl} alt={label}
+              style={{ maxWidth: '85vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: 4, border: '1px solid rgba(200,168,75,0.2)', display: 'block' }}
+            />
+            {/* Close */}
+            <button
+              onClick={() => setImgOpen(false)}
+              style={{ position: 'absolute', top: -14, right: -14, width: 28, height: 28, borderRadius: '50%', background: 'rgba(15,10,5,0.95)', border: '1px solid rgba(200,168,75,0.3)', color: '#c8a84b', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >✕</button>
+            {/* Re-upload — bottom-right corner */}
+            <button
+              onClick={() => inputRef.current?.click()}
+              style={{ position: 'absolute', bottom: 12, right: 12, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(10,7,3,0.92)', border: '1px solid rgba(200,168,75,0.35)', borderRadius: 3, padding: '6px 12px', color: '#c8a84b', fontFamily: D4, fontSize: '0.55rem', letterSpacing: '0.12em', cursor: 'pointer' }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              New Upload
+            </button>
+          </div>
+        </div>
+      )}
 
       <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFile} />
     </div>
@@ -666,6 +692,79 @@ function _BuildImportPanelUnused({
   )
 }
 
+/* ─── Build visual slot tile ───────────────────────────────── */
+function BuildSlotTile({ slot, label, build, myItem, selected, onSelect }: {
+  slot: GearSlot
+  label: string
+  build?: { affixes: string[]; greaterAffixes: string[]; itemName?: string }
+  myItem?: ParsedItem
+  selected: boolean
+  onSelect: (s: GearSlot) => void
+}) {
+  const norm = (s: string) => s.toLowerCase().replace(/[+\-%\d.,]/g, '').trim()
+  const affixes = build?.affixes ?? []
+  const matched = myItem ? affixes.filter(r => {
+    const tn = norm(r)
+    return myItem.affixes.some(a => { const b = norm(a.name ?? a.raw ?? ''); return b.includes(tn) || tn.includes(b) })
+  }).length : 0
+  const matchColor = !build || affixes.length === 0 ? null
+    : !myItem ? '#4a3c28'
+    : matched === affixes.length ? '#22c55e'
+    : matched > 0 ? '#eab308' : '#ef4444'
+  const borderCol = selected ? 'rgba(200,168,75,0.9)' : matchColor ? `${matchColor}55` : 'rgba(50,38,25,0.35)'
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+      <div
+        role="button"
+        onClick={() => onSelect(slot)}
+        style={{
+          width: 80, height: 80, position: 'relative', cursor: 'pointer',
+          background: 'radial-gradient(ellipse at 50% 30%, rgba(14,11,18,0.93) 0%, rgba(5,4,8,0.97) 100%)',
+          border: `2px solid ${borderCol}`, borderRadius: 3, overflow: 'hidden',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          padding: '5px 4px', transition: 'border-color 0.18s',
+          boxShadow: selected ? '0 0 16px rgba(200,168,75,0.3)' : 'none',
+        }}
+      >
+        {(['tl','tr','bl','br'] as const).map(c => (
+          <div key={c} style={{
+            position: 'absolute',
+            top: c.startsWith('t') ? 0 : undefined, bottom: c.startsWith('b') ? 0 : undefined,
+            left: c.endsWith('l') ? 0 : undefined, right: c.endsWith('r') ? 0 : undefined,
+            width: 9, height: 9,
+            borderTop:    c.startsWith('t') ? '1px solid rgba(200,168,75,0.22)' : undefined,
+            borderBottom: c.startsWith('b') ? '1px solid rgba(200,168,75,0.22)' : undefined,
+            borderLeft:   c.endsWith('l')   ? '1px solid rgba(200,168,75,0.22)' : undefined,
+            borderRight:  c.endsWith('r')   ? '1px solid rgba(200,168,75,0.22)' : undefined,
+            pointerEvents: 'none',
+          }} />
+        ))}
+
+        {/* Badge */}
+        {build && affixes.length > 0 && (
+          <div style={{ position: 'absolute', top: 2, right: 3, fontFamily: D4, fontSize: '0.44rem', color: matchColor ?? '#4a3c28' }}>
+            {myItem ? `${matched}/${affixes.length}` : `?/${affixes.length}`}
+          </div>
+        )}
+
+        {/* Item name or icon */}
+        {build?.itemName ? (
+          <span style={{ fontSize: '0.41rem', fontFamily: D4, color: '#a08060', textAlign: 'center', lineHeight: 1.25, wordBreak: 'break-all', padding: '0 2px' }}>{build.itemName}</span>
+        ) : (
+          <div style={{ color: '#c8a84b', opacity: 0.11 }}>{ICONS[slot]}</div>
+        )}
+
+        {/* Match bar */}
+        {matchColor && (
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: matchColor, opacity: 0.75 }} />
+        )}
+      </div>
+      <span style={{ fontFamily: D4, fontSize: '0.44rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: selected ? '#c8a84b' : '#2e2418' }}>{label}</span>
+    </div>
+  )
+}
+
 /* ─── All slots in order ────────────────────────────────────── */
 const ALL_SLOTS = [...LEFT_SLOTS, ...RIGHT_SLOTS, ...WEAPON_SLOTS]
 
@@ -721,7 +820,7 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
 
   return (
     <div style={{
-      width: 380, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      width: 480, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
       borderLeft: '1px solid rgba(200,168,75,0.1)',
       background: 'linear-gradient(180deg, rgba(6,4,12,0.97) 0%, rgba(3,2,8,0.99) 100%)',
     }}>
@@ -758,7 +857,7 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
         )}
       </div>
 
-      {/* ── Slot list ── */}
+      {/* ── Visual build layout ── */}
       {!hasBuild ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: 0.35 }}>
           <p style={{ color: '#c8a84b', fontFamily: D4, fontSize: '0.58rem', letterSpacing: '0.15em', textAlign: 'center', lineHeight: 1.8 }}>
@@ -766,108 +865,125 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
           </p>
         </div>
       ) : (
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {ALL_SLOTS.map(({ slot, label }) => {
-            const build   = targetBuild[slot]
-            const myItem  = inventory[slot]?.parsedItem
-            const match   = getSlotMatch(slot)
-            const isSel   = selectedSlot === slot
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-            return (
-              <div key={slot}>
-                {/* ── Slot row ── */}
-                <div
-                  onClick={() => onSelectSlot(isSel ? null : slot)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px',
-                    cursor: 'pointer',
-                    borderLeft: isSel ? '2px solid rgba(200,168,75,0.6)' : '2px solid transparent',
-                    background: isSel ? 'rgba(200,168,75,0.05)' : 'transparent',
-                    transition: 'background 0.12s',
-                    borderBottom: '1px solid rgba(255,255,255,0.025)',
-                  }}
-                >
-                  {/* Slot label + item name */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: D4, fontSize: '0.5rem', color: isSel ? '#c8a84b' : '#4a3c28', letterSpacing: '0.18em', textTransform: 'uppercase' }}>{label}</div>
-                    {build?.itemName && (
-                      <div style={{ fontSize: '0.62rem', color: '#a09070', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{build.itemName}</div>
-                    )}
-                    {!build && (
-                      <div style={{ fontSize: '0.58rem', color: '#2a2018' }}>No build data</div>
-                    )}
-                  </div>
-
-                  {/* Match badge */}
-                  {match && (
-                    <div style={{ flexShrink: 0, fontFamily: D4, fontSize: '0.55rem', color: match.color, background: `${match.color}18`, border: `1px solid ${match.color}35`, borderRadius: 3, padding: '2px 7px', letterSpacing: '0.05em' }}>
-                      {match.hasItem ? `${match.matched}/${match.total}` : `0/${match.total}`}
-                    </div>
-                  )}
-                  <span style={{ color: '#3a2e1c', fontSize: '0.6rem' }}>{isSel ? '▲' : '▼'}</span>
+          {/* 3-column character layout */}
+          <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', padding: '12px 10px 8px' }}>
+            <div>
+              <p style={{ fontFamily: D4, fontSize: '0.5rem', color: '#3a2e1c', letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 }}>Build Target</p>
+              <div style={{ display: 'flex', alignItems: 'stretch', gap: 14 }}>
+                {/* Left */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {LEFT_SLOTS.map(({ slot, label }) => (
+                    <BuildSlotTile
+                      key={slot} slot={slot} label={label}
+                      build={targetBuild[slot]}
+                      myItem={inventory[slot]?.parsedItem}
+                      selected={selectedSlot === slot}
+                      onSelect={s => onSelectSlot(selectedSlot === s ? null : s)}
+                    />
+                  ))}
                 </div>
+                {/* Center portrait */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: 240 }}>
+                  <div style={{ flex: 1, width: '100%', minHeight: 180, maxHeight: 260 }}><Portrait /></div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {WEAPON_SLOTS.map(({ slot, label }) => (
+                      <BuildSlotTile
+                        key={slot} slot={slot} label={label}
+                        build={targetBuild[slot]}
+                        myItem={inventory[slot]?.parsedItem}
+                        selected={selectedSlot === slot}
+                        onSelect={s => onSelectSlot(selectedSlot === s ? null : s)}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {/* Right */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 44, paddingTop: 44 }}>
+                  {RIGHT_SLOTS.map(({ slot, label }) => (
+                    <BuildSlotTile
+                      key={slot} slot={slot} label={label}
+                      build={targetBuild[slot]}
+                      myItem={inventory[slot]?.parsedItem}
+                      selected={selectedSlot === slot}
+                      onSelect={s => onSelectSlot(selectedSlot === s ? null : s)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
 
-                {/* ── Expanded comparison ── */}
-                {isSel && (
-                  <div style={{ margin: '0 10px 6px', padding: '10px 12px', background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(200,168,75,0.1)', borderRadius: 3 }}>
+          <div style={{ height: 1, background: 'rgba(200,168,75,0.06)', flexShrink: 0 }} />
 
-                    {/* My item meta */}
-                    {myItem && (
-                      <div style={{ display: 'flex', gap: 10, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        {myItem.itemName && <span style={{ color: '#c8a84b', fontFamily: D4, fontSize: '0.6rem' }}>{myItem.itemName}</span>}
-                        {myItem.itemPower && <span style={{ color: '#6b5e4a', fontSize: '0.58rem' }}>P{myItem.itemPower}</span>}
-                        {myItem.rarity && <span style={{ color: rarityColor(myItem.rarity), fontSize: '0.58rem', textTransform: 'uppercase' }}>{myItem.rarity}</span>}
-                        {myItem.masterworkLevel > 0 && <span style={{ color: '#a78bfa', fontSize: '0.58rem' }}>MW{myItem.masterworkLevel}</span>}
-                      </div>
-                    )}
-
-                    {/* Side-by-side */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-
-                      {/* YOUR affixes */}
-                      <div>
-                        <p style={{ fontFamily: D4, fontSize: '0.5rem', color: '#4a3c28', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 6 }}>Your Stats</p>
-                        {!myItem ? (
-                          <p style={{ color: '#3a2e1c', fontSize: '0.6rem' }}>Not scanned yet</p>
-                        ) : myItem.affixes.length === 0 ? (
-                          <p style={{ color: '#3a2e1c', fontSize: '0.6rem' }}>No affixes</p>
-                        ) : myItem.affixes.map((a, i) => {
-                          const hit  = build?.affixes.some(r => { const tn = norm(r); const b = norm(a.name ?? a.raw ?? ''); return b.includes(tn) || tn.includes(b) }) ?? false
-                          const isGA = myItem.greaterAffixes.includes(a.name ?? '')
-                          return (
-                            <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'flex-start' }}>
-                              <span style={{ fontSize: '0.58rem', flexShrink: 0, marginTop: 1, color: isGA ? '#c8a84b' : hit ? '#22c55e' : '#5a4a30' }}>{isGA ? '✦' : '•'}</span>
-                              <span style={{ fontSize: '0.61rem', lineHeight: 1.35, color: hit ? '#22c55e' : '#b0a080' }}>
-                                {a.raw ?? `${a.name ?? ''} ${a.valueText ?? ''}`.trim()}
-                              </span>
-                            </div>
-                          )
-                        })}
-                      </div>
-
-                      {/* BUILD affixes */}
-                      <div>
-                        <p style={{ fontFamily: D4, fontSize: '0.5rem', color: '#4a3c28', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 6 }}>Build Stats</p>
-                        {!build || build.affixes.length === 0 ? (
-                          <p style={{ color: '#3a2e1c', fontSize: '0.6rem' }}>No affix data</p>
-                        ) : build.affixes.map((req, i) => {
-                          const found = affixMatch(myItem, req)
-                          const isGA  = build.greaterAffixes.includes(req)
-                          return (
-                            <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'flex-start' }}>
-                              <span style={{ fontSize: '0.6rem', flexShrink: 0, marginTop: 1, color: found ? '#22c55e' : '#ef4444' }}>{found ? '✓' : '✗'}</span>
-                              {isGA && <span style={{ fontSize: '0.52rem', color: '#c8a84b', flexShrink: 0, marginTop: 2 }}>✦</span>}
-                              <span style={{ fontSize: '0.61rem', lineHeight: 1.35, color: found ? '#c5b89a' : '#ef4444' }}>{req}</span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
+          {/* Comparison pane */}
+          {selectedSlot ? (() => {
+            const build    = targetBuild[selectedSlot]
+            const myItem   = inventory[selectedSlot]?.parsedItem
+            const slotLabel = ALL_SLOTS.find(s => s.slot === selectedSlot)?.label ?? selectedSlot
+            return (
+              <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: D4, fontSize: '0.56rem', color: '#c8a84b', letterSpacing: '0.2em', textTransform: 'uppercase' }}>{slotLabel}</span>
+                  {build?.itemName && <span style={{ fontSize: '0.62rem', color: '#a09070' }}>{build.itemName}</span>}
+                  {myItem?.itemName && <span style={{ fontSize: '0.6rem', color: '#c8a84b', fontFamily: D4, marginLeft: 'auto' }}>{myItem.itemName}</span>}
+                </div>
+                {myItem && (
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid rgba(255,255,255,0.04)', flexWrap: 'wrap' }}>
+                    {myItem.itemPower && <span style={{ color: '#6b5e4a', fontSize: '0.57rem' }}>P{myItem.itemPower}</span>}
+                    {myItem.rarity    && <span style={{ color: rarityColor(myItem.rarity), fontSize: '0.57rem', textTransform: 'uppercase' }}>{myItem.rarity}</span>}
+                    {myItem.masterworkLevel > 0 && <span style={{ color: '#a78bfa', fontSize: '0.57rem' }}>MW{myItem.masterworkLevel}</span>}
                   </div>
                 )}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  {/* Your Stats */}
+                  <div>
+                    <p style={{ fontFamily: D4, fontSize: '0.48rem', color: '#4a3c28', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 7 }}>Your Stats</p>
+                    {!myItem ? (
+                      <p style={{ color: '#3a2e1c', fontSize: '0.62rem' }}>Not scanned yet</p>
+                    ) : myItem.affixes.length === 0 ? (
+                      <p style={{ color: '#3a2e1c', fontSize: '0.62rem' }}>No affixes</p>
+                    ) : myItem.affixes.map((a, i) => {
+                      const hit  = build?.affixes.some(r => { const tn = norm(r); const b = norm(a.name ?? a.raw ?? ''); return b.includes(tn) || tn.includes(b) }) ?? false
+                      const isGA = myItem.greaterAffixes.includes(a.name ?? '')
+                      return (
+                        <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 5, alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: '0.6rem', flexShrink: 0, marginTop: 1, color: isGA ? '#c8a84b' : hit ? '#22c55e' : '#5a4a30' }}>{isGA ? '✦' : '•'}</span>
+                          <span style={{ fontSize: '0.64rem', lineHeight: 1.38, color: hit ? '#22c55e' : '#b0a080' }}>
+                            {a.raw ?? `${a.name ?? ''} ${a.valueText ?? ''}`.trim()}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {/* Build Stats */}
+                  <div>
+                    <p style={{ fontFamily: D4, fontSize: '0.48rem', color: '#4a3c28', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 7 }}>Build Stats</p>
+                    {!build || build.affixes.length === 0 ? (
+                      <p style={{ color: '#3a2e1c', fontSize: '0.62rem' }}>No affix data</p>
+                    ) : build.affixes.map((req, i) => {
+                      const found = affixMatch(myItem, req)
+                      const isGA  = build.greaterAffixes.includes(req)
+                      return (
+                        <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 5, alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: '0.62rem', flexShrink: 0, marginTop: 1, color: found ? '#22c55e' : '#ef4444' }}>{found ? '✓' : '✗'}</span>
+                          {isGA && <span style={{ fontSize: '0.52rem', color: '#c8a84b', flexShrink: 0, marginTop: 2 }}>✦</span>}
+                          <span style={{ fontSize: '0.64rem', lineHeight: 1.38, color: found ? '#c5b89a' : '#ef4444' }}>{req}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
             )
-          })}
+          })() : (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.28 }}>
+              <p style={{ color: '#c8a84b', fontFamily: D4, fontSize: '0.55rem', letterSpacing: '0.15em', textAlign: 'center' }}>
+                Click a slot to compare
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
