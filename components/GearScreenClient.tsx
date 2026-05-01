@@ -268,11 +268,35 @@ function ItemPanel({ slot, item, targetData, onClose }: {
 }) {
   const slotLabel = [...LEFT_SLOTS, ...RIGHT_SLOTS, ...WEAPON_SLOTS].find(s => s.slot === slot)?.label ?? slot
 
+  // Normalise affix text for loose matching
+  const normAffix = (s: string) => s.toLowerCase().replace(/[+\-%\d.,]/g, '').trim()
+
+  const myAffixes = item?.affixes ?? []
+  const buildAffixes = targetData?.affixes ?? []
+
+  const myMatchesBuild = (affix: { name?: string; raw?: string }) => {
+    const base = normAffix(affix.name ?? affix.raw ?? '')
+    return buildAffixes.some(t => {
+      const tn = normAffix(t)
+      return base.includes(tn) || tn.includes(base)
+    })
+  }
+
+  const buildMatchesMy = (req: string) => {
+    const tn = normAffix(req)
+    return myAffixes.some(a => {
+      const base = normAffix(a.name ?? a.raw ?? '')
+      return base.includes(tn) || tn.includes(base)
+    })
+  }
+
+  const hasBuild = buildAffixes.length > 0
+
   return (
     <div
       className="fixed inset-y-0 right-0 z-40 overflow-y-auto"
       style={{
-        width: 320,
+        width: hasBuild ? 440 : 320,
         background: 'linear-gradient(180deg, rgba(18,16,28,0.98) 0%, rgba(6,4,14,0.99) 100%)',
         borderLeft: '1px solid rgba(200,168,75,0.15)',
         boxShadow: '-8px 0 40px rgba(0,0,0,0.8)',
@@ -280,91 +304,139 @@ function ItemPanel({ slot, item, targetData, onClose }: {
     >
       <div className="p-5">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h3 style={{ fontFamily: D4, color: '#c8a84b', fontSize: '0.8rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
             {slotLabel}
           </h3>
           <button onClick={onClose} style={{ color: '#6b5e4a', fontSize: '1.2rem', lineHeight: 1 }}>✕</button>
         </div>
 
-        <div className="h-px mb-4" style={{ background: 'linear-gradient(to right, transparent, rgba(200,168,75,0.3), transparent)' }} />
+        {/* Item name + meta */}
+        {item && (
+          <div className="mb-3">
+            {item.itemName && (
+              <p style={{ color: '#c8a84b', fontFamily: D4, fontSize: '0.75rem', letterSpacing: '0.1em', marginBottom: '0.2rem' }}>
+                {item.itemName}
+              </p>
+            )}
+            <div className="flex gap-3">
+              {item.itemPower && <span style={{ color: '#8a7a62', fontSize: '0.62rem' }}>Power {item.itemPower}</span>}
+              {item.rarity     && <span style={{ color: rarityColor(item.rarity), fontSize: '0.62rem', textTransform: 'uppercase' }}>{item.rarity}</span>}
+              {item.masterworkLevel > 0 && <span style={{ color: '#a78bfa', fontSize: '0.62rem' }}>MW {item.masterworkLevel}</span>}
+            </div>
+          </div>
+        )}
 
-        {!item ? (
+        <div className="h-px mb-4" style={{ background: 'linear-gradient(to right, transparent, rgba(200,168,75,0.25), transparent)' }} />
+
+        {!item && !hasBuild && (
           <p style={{ color: '#6b5e4a', fontSize: '0.75rem', textAlign: 'center', paddingTop: '2rem' }}>
             No item scanned yet.<br />Click the slot to upload a screenshot.
           </p>
-        ) : (
-          <>
-            {/* Item header */}
-            <div className="mb-3">
-              {item.itemName && (
-                <p style={{ color: '#c8a84b', fontFamily: D4, fontSize: '0.75rem', letterSpacing: '0.1em', marginBottom: '0.25rem' }}>
-                  {item.itemName}
-                </p>
-              )}
-              <div className="flex gap-3">
-                {item.itemPower && <span style={{ color: '#8a7a62', fontSize: '0.65rem' }}>Power {item.itemPower}</span>}
-                {item.rarity && <span style={{ color: rarityColor(item.rarity), fontSize: '0.65rem', textTransform: 'uppercase' }}>{item.rarity}</span>}
-                {item.masterworkLevel > 0 && <span style={{ color: '#a78bfa', fontSize: '0.65rem' }}>MW {item.masterworkLevel}</span>}
-              </div>
+        )}
+
+        {/* ── Side-by-side comparison ── */}
+        {hasBuild ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+
+            {/* LEFT — Your affixes */}
+            <div>
+              <p style={{ color: '#6b5e4a', fontSize: '0.58rem', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                Your Item
+              </p>
+              {!item || myAffixes.length === 0 ? (
+                <p style={{ color: '#3a2e1c', fontSize: '0.65rem' }}>—</p>
+              ) : myAffixes.map((a, i) => {
+                const match = myMatchesBuild(a)
+                const isGA  = item.greaterAffixes.includes(a.name ?? '')
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, marginBottom: 6 }}>
+                    {isGA
+                      ? <span style={{ color: '#c8a84b', fontSize: '0.6rem', flexShrink: 0, marginTop: 1 }}>✦</span>
+                      : <span style={{ color: match ? '#22c55e' : '#6b5e4a', fontSize: '0.65rem', flexShrink: 0, marginTop: 1 }}>•</span>
+                    }
+                    <span style={{
+                      fontSize: '0.68rem',
+                      lineHeight: 1.4,
+                      color: match ? '#22c55e' : '#c5b89a',
+                    }}>
+                      {a.raw ?? `${a.name ?? ''} ${a.valueText ?? ''}`.trim()}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
 
-            {/* Affixes */}
-            {item.affixes.length > 0 && (
-              <div className="mb-3">
-                <p style={{ color: '#6b5e4a', fontSize: '0.6rem', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Affixes</p>
-                {item.affixes.map((a, i) => {
-                  const isGreater = item.greaterAffixes.includes(a.name ?? '')
-                  const isTarget = targetData?.affixes.some(t => a.name?.toLowerCase().includes(t.toLowerCase().split('%')[0].trim()))
-                  return (
-                    <div key={i} className="flex items-start gap-2 mb-1">
-                      {isGreater && <span style={{ color: '#c8a84b', fontSize: '0.6rem', flexShrink: 0 }}>✦</span>}
-                      {!isGreater && <span style={{ width: 10, flexShrink: 0 }} />}
-                      <span style={{
-                        fontSize: '0.7rem',
-                        color: isTarget ? '#22c55e' : '#c5b89a',
-                        lineHeight: 1.4,
-                      }}>
-                        {a.raw ?? `${a.name} ${a.valueText ?? ''}`}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+            {/* Divider */}
+            <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'rgba(200,168,75,0.08)', pointerEvents: 'none' }} />
 
-            {/* Aspect */}
-            {item.aspect && (
-              <div className="mb-3 p-2 rounded" style={{ background: 'rgba(200,100,0,0.08)', border: '1px solid rgba(200,100,0,0.2)' }}>
-                <p style={{ color: '#c84b1a', fontSize: '0.6rem', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Aspect</p>
-                <p style={{ color: '#c5b89a', fontSize: '0.68rem' }}>{item.aspect.name}</p>
-                <p style={{ color: '#6b5e4a', fontSize: '0.6rem', marginTop: '0.2rem' }}>{item.aspect.effect}</p>
-              </div>
-            )}
+            {/* RIGHT — Build requirements */}
+            <div>
+              <p style={{ color: '#6b5e4a', fontSize: '0.58rem', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                Build Target
+              </p>
+              {buildAffixes.map((req, i) => {
+                const found       = buildMatchesMy(req)
+                const needsGreater = targetData?.greaterAffixes.includes(req)
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, marginBottom: 6 }}>
+                    <span style={{ fontSize: '0.65rem', flexShrink: 0, marginTop: 1, color: found ? '#22c55e' : '#ef4444' }}>
+                      {found ? '✓' : '✗'}
+                    </span>
+                    {needsGreater && (
+                      <span style={{ fontSize: '0.55rem', color: '#c8a84b', flexShrink: 0, marginTop: 2 }}>✦</span>
+                    )}
+                    <span style={{ fontSize: '0.68rem', lineHeight: 1.4, color: found ? '#c5b89a' : '#ef4444' }}>
+                      {req}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
 
-            {/* Target comparison */}
-            {targetData && targetData.affixes.length > 0 && (
-              <div>
-                <div className="h-px mb-3" style={{ background: 'linear-gradient(to right, transparent, rgba(200,168,75,0.2), transparent)' }} />
-                <p style={{ color: '#6b5e4a', fontSize: '0.6rem', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                  Build Requirements
-                </p>
-                {targetData.affixes.map((req, i) => {
-                  const found = item.affixes.some(a => a.name?.toLowerCase().includes(req.toLowerCase().split('%')[0].trim()))
-                  const needsGreater = targetData.greaterAffixes.includes(req)
-                  const hasGreater = found && item.greaterAffixes.some(g => req.toLowerCase().includes(g.toLowerCase()))
-                  return (
-                    <div key={i} className="flex items-center gap-2 mb-1">
-                      <span style={{ fontSize: '0.65rem', color: found ? '#22c55e' : '#ef4444' }}>
-                        {found ? '✓' : '✗'}
-                      </span>
-                      {needsGreater && <span style={{ fontSize: '0.55rem', color: hasGreater ? '#c8a84b' : '#6b5e4a' }}>✦</span>}
-                      <span style={{ fontSize: '0.68rem', color: found ? '#c5b89a' : '#6b5e4a' }}>{req}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+          </div>
+        ) : (
+          /* ── Single-column view when no build loaded ── */
+          item && myAffixes.length > 0 && (
+            <div>
+              <p style={{ color: '#6b5e4a', fontSize: '0.6rem', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Affixes</p>
+              {myAffixes.map((a, i) => {
+                const isGA = item.greaterAffixes.includes(a.name ?? '')
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 5 }}>
+                    {isGA
+                      ? <span style={{ color: '#c8a84b', fontSize: '0.6rem', flexShrink: 0 }}>✦</span>
+                      : <span style={{ width: 10, flexShrink: 0 }} />
+                    }
+                    <span style={{ fontSize: '0.7rem', color: '#c5b89a', lineHeight: 1.4 }}>
+                      {a.raw ?? `${a.name ?? ''} ${a.valueText ?? ''}`.trim()}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        )}
+
+        {/* Aspect */}
+        {item?.aspect && (
+          <>
+            <div className="h-px my-4" style={{ background: 'linear-gradient(to right, transparent, rgba(200,100,0,0.2), transparent)' }} />
+            <div className="p-2 rounded" style={{ background: 'rgba(200,100,0,0.08)', border: '1px solid rgba(200,100,0,0.2)' }}>
+              <p style={{ color: '#c84b1a', fontSize: '0.6rem', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Aspect</p>
+              <p style={{ color: '#c5b89a', fontSize: '0.68rem' }}>{item.aspect.name}</p>
+              <p style={{ color: '#6b5e4a', fontSize: '0.6rem', marginTop: '0.2rem' }}>{item.aspect.effect}</p>
+            </div>
+          </>
+        )}
+
+        {/* Hint: no build loaded */}
+        {!hasBuild && item && (
+          <>
+            <div className="h-px mt-4 mb-3" style={{ background: 'linear-gradient(to right, transparent, rgba(200,168,75,0.1), transparent)' }} />
+            <p style={{ color: '#3a2e1c', fontSize: '0.6rem', lineHeight: 1.7 }}>
+              Import a build to compare your affixes against build requirements.
+            </p>
           </>
         )}
       </div>
