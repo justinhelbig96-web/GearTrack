@@ -5,6 +5,7 @@
 @layer base {
   :root {
     color-scheme: dark;
+    --font-diablo: var(--font-cinzel), 'Cinzel', 'Trajan Pro', 'Times New Roman', serif;
   }
 
   * {

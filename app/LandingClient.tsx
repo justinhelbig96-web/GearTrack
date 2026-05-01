@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
+const D4 = 'var(--font-diablo)'
+
 /* ─── Ember Particle ─────────────────────────────────────────── */
 interface Ember { id: number; left: number; delay: number; duration: number; size: number }
 
@@ -134,9 +136,9 @@ function FeatureCard({
 
         <h3 style={{
           color:         '#c8a84b',
-          fontSize:      '1rem',
-          fontFamily:    'Georgia, serif',
-          letterSpacing: '0.12em',
+          fontSize:      '0.85rem',
+          fontFamily:    D4,
+          letterSpacing: '0.15em',
           textTransform: 'uppercase',
           marginBottom:  '0.6rem',
         }}>
@@ -161,13 +163,13 @@ function Step({ num, title, desc, delay }: { num: string; title: string; desc: s
             background: 'linear-gradient(135deg, #2a1e0f, #1a1206)',
             boxShadow:  '0 0 0 1px rgba(200,168,75,0.3), 0 0 20px rgba(200,100,0,0.15)',
           }}>
-          <span style={{ color: '#c8a84b', fontSize: '0.85rem', fontFamily: 'Georgia, serif', fontWeight: 700 }}>
+          <span style={{ color: '#c8a84b', fontSize: '0.85rem', fontFamily: D4, fontWeight: 700 }}>
             {num}
           </span>
           {/* connecting line (not last) */}
         </div>
         <div>
-          <h4 style={{ color: '#c5b89a', fontSize: '1rem', fontFamily: 'Georgia, serif', letterSpacing: '0.08em', marginBottom: '0.35rem' }}>
+          <h4 style={{ color: '#c5b89a', fontSize: '1rem', fontFamily: D4, letterSpacing: '0.1em', marginBottom: '0.35rem' }}>
             {title}
           </h4>
           <p style={{ color: '#6b5e4a', fontSize: '0.82rem', lineHeight: 1.75 }}>
@@ -206,16 +208,16 @@ export default function LandingClient() {
         }}
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <span style={{ color: '#c8a84b', fontFamily: 'Georgia, serif', fontSize: '1.2rem', letterSpacing: '0.25em' }}>
+          <span style={{ color: '#c8a84b', fontFamily: D4, fontSize: '1.1rem', letterSpacing: '0.3em' }}>
             GearGap
           </span>
           <Link
             href="/api/auth/battlenet"
             className="flex items-center gap-2 px-4 py-2 rounded text-white text-sm font-semibold"
-            style={{ background: 'linear-gradient(135deg, #0e5aa7, #0074E0)', boxShadow: '0 2px 16px rgba(0,116,224,0.35)' }}
+            style={{ background: 'linear-gradient(135deg, #0e5aa7, #0074E0)', boxShadow: '0 2px 16px rgba(0,116,224,0.35)', fontFamily: D4, letterSpacing: '0.08em' }}
           >
             <BnetIcon />
-            Anmelden
+            Sign In
           </Link>
         </div>
       </nav>
@@ -223,8 +225,29 @@ export default function LandingClient() {
       {/* ══════════════════ HERO ══════════════════ */}
       <section
         className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
-        style={{ background: 'radial-gradient(ellipse at 50% 100%, #1a0404 0%, #060409 45%, #020205 100%)' }}
+        style={{ background: '#000' }}
       >
+        {/* ── YouTube Video Background ── */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <iframe
+            src="https://www.youtube.com/embed/qjEp8Q6OElg?autoplay=1&mute=1&loop=1&playlist=qjEp8Q6OElg&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&start=10"
+            allow="autoplay; encrypted-media"
+            className="absolute"
+            style={{
+              top: '50%', left: '50%',
+              width: '177.8vh', minWidth: '100%',
+              height: '100vh', minHeight: '56.25vw',
+              transform: 'translate(-50%, -50%)',
+              border: 'none',
+              pointerEvents: 'none',
+            }}
+          />
+        </div>
+
+        {/* Dark overlay so text is readable */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.7) 100%)' }} />
+
         {/* Parallax hell-glow */}
         <div
           className="absolute pointer-events-none"
@@ -233,7 +256,7 @@ export default function LandingClient() {
             left:      '50%',
             width:     '130%',
             height:    '60%',
-            background: 'radial-gradient(ellipse at center bottom, rgba(160,20,10,0.5) 0%, rgba(100,10,5,0.2) 40%, transparent 70%)',
+            background: 'radial-gradient(ellipse at center bottom, rgba(160,20,10,0.45) 0%, rgba(100,10,5,0.15) 40%, transparent 70%)',
             transform: 'translateX(-50%)',
             animation: 'hellglow-pulse 6s ease-in-out infinite',
           }}
@@ -241,7 +264,7 @@ export default function LandingClient() {
 
         {/* Vignette */}
         <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.8) 100%)' }} />
+          style={{ background: 'radial-gradient(ellipse at center, transparent 20%, rgba(0,0,0,0.65) 100%)' }} />
 
         {/* Embers */}
         <EmberLayer count={70} />
@@ -266,36 +289,38 @@ export default function LandingClient() {
               textTransform: 'uppercase',
             }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#c8a84b', display: 'inline-block', animation: 'hellglow-pulse 2s infinite' }} />
-            Diablo IV Companion
+            Diablo IV · Gear Companion
           </div>
 
           {/* Main headline */}
           <h1
             className="gold-breathe"
             style={{
-              fontFamily:    'Georgia, serif',
+              fontFamily:    D4,
               fontSize:      'clamp(2.8rem, 6vw, 5.5rem)',
-              fontWeight:    700,
+              fontWeight:    900,
               color:         '#c8a84b',
-              letterSpacing: '0.06em',
+              letterSpacing: '0.08em',
               lineHeight:    1.05,
               marginBottom:  '1.5rem',
+              textShadow:    '0 2px 40px rgba(0,0,0,0.9)',
             }}
           >
             Master Your<br />
-            <span style={{ color: '#c84b1a', textShadow: '0 0 40px rgba(200,75,26,0.6)' }}>Sanctuary</span>{' '}
+            <span style={{ color: '#c84b1a', textShadow: '0 0 60px rgba(200,75,26,0.9), 0 2px 40px rgba(0,0,0,0.9)' }}>Sanctuary</span>{' '}
             Gear
           </h1>
 
           <p style={{
-            color:         '#8a7a62',
+            color:         'rgba(197,184,154,0.85)',
             fontSize:      'clamp(0.95rem, 2vw, 1.1rem)',
             lineHeight:    1.8,
             maxWidth:      '520px',
             margin:        '0 auto 2.5rem',
+            textShadow:    '0 1px 8px rgba(0,0,0,0.8)',
           }}>
-            Scanne deine Items per Screenshot, verwalte dein vollständiges Armory
-            und vergleiche Gear — alles an einem Ort.
+            Screenshot your items. Track your full armory.
+            Compare gear in seconds — all in one place.
           </p>
 
           {/* CTAs */}
@@ -304,30 +329,33 @@ export default function LandingClient() {
               href="/api/auth/battlenet"
               className="flex items-center gap-2.5 px-7 py-3.5 rounded text-white font-semibold"
               style={{
-                background:  'linear-gradient(135deg, #0e5aa7 0%, #0074E0 50%, #0d8fff 100%)',
-                boxShadow:   '0 4px 30px rgba(0,116,224,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
-                fontSize:    '0.9rem',
-                letterSpacing: '0.03em',
-                transition:  'all 0.3s',
+                background:    'linear-gradient(135deg, #0e5aa7 0%, #0074E0 50%, #0d8fff 100%)',
+                boxShadow:     '0 4px 30px rgba(0,116,224,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
+                fontFamily:    D4,
+                fontSize:      '0.8rem',
+                letterSpacing: '0.1em',
+                transition:    'all 0.3s',
               }}
             >
               <BnetIcon />
-              Kostenlos starten
+              Start for Free
             </Link>
 
             <a
               href="#features"
               className="flex items-center gap-2 px-6 py-3.5 rounded font-medium"
               style={{
-                color:       '#c8a84b',
-                border:      '1px solid rgba(200,168,75,0.3)',
-                fontSize:    '0.85rem',
-                letterSpacing: '0.05em',
-                transition:  'all 0.3s',
-                background:  'rgba(200,168,75,0.04)',
+                color:         '#c8a84b',
+                border:        '1px solid rgba(200,168,75,0.4)',
+                fontFamily:    D4,
+                fontSize:      '0.75rem',
+                letterSpacing: '0.12em',
+                transition:    'all 0.3s',
+                background:    'rgba(0,0,0,0.3)',
+                backdropFilter: 'blur(8px)',
               }}
             >
-              Features entdecken
+              Explore Features
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 5v14M5 12l7 7 7-7"/>
               </svg>
@@ -353,14 +381,14 @@ export default function LandingClient() {
       <section style={{ borderTop: '1px solid rgba(200,168,75,0.08)', borderBottom: '1px solid rgba(200,168,75,0.08)', background: 'rgba(200,168,75,0.03)', padding: '2rem 1.5rem' }}>
         <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            { label: 'Item-Slots', value: 10, suffix: '' },
-            { label: 'Gear-Vergleiche', value: 100, suffix: '+' },
-            { label: 'Battle.net Login', value: 0, suffix: ' Sek.' },
-            { label: 'Datenbank-Einträge', value: 50000, suffix: '+' },
+            { label: 'Item Slots', value: 10, suffix: '' },
+            { label: 'Gear Comparisons', value: 100, suffix: '+' },
+            { label: 'Sec to Sign In', value: 5, suffix: '' },
+            { label: 'Database Entries', value: 50000, suffix: '+' },
           ].map((s, i) => (
             <Reveal key={i} delay={i * 0.1}>
               <div>
-                <div style={{ color: '#c8a84b', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontFamily: 'Georgia, serif', fontWeight: 700 }}>
+                <div style={{ color: '#c8a84b', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontFamily: D4, fontWeight: 700 }}>
                   <Counter to={s.value} suffix={s.suffix} />
                 </div>
                 <div style={{ color: '#6b5e4a', fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: '0.3rem' }}>
@@ -380,8 +408,8 @@ export default function LandingClient() {
               <p style={{ color: '#c84b1a', fontSize: '0.65rem', letterSpacing: '0.4em', textTransform: 'uppercase', marginBottom: '1rem' }}>
                 ✦ &nbsp; Features &nbsp; ✦
               </p>
-              <h2 style={{ color: '#c8a84b', fontFamily: 'Georgia, serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', letterSpacing: '0.06em' }}>
-                Alles für deinen Build
+              <h2 style={{ color: '#c8a84b', fontFamily: D4, fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', letterSpacing: '0.08em' }}>
+                Everything for Your Build
               </h2>
               <div className="mx-auto mt-5"
                 style={{ width: 60, height: 2, background: 'linear-gradient(to right, transparent, #c8a84b, transparent)' }} />
@@ -392,21 +420,21 @@ export default function LandingClient() {
             <FeatureCard
               icon={<ScanIcon />}
               title="Gear Scanner"
-              desc="Lade einen Screenshot hoch — KI erkennt automatisch alle Affixe, Stats und den Item-Typ. Kein manuelles Eintippen mehr."
+              desc="Upload a screenshot — AI automatically detects all affixes, stats, and item type. No manual typing needed."
               delay={0}
               from="left"
             />
             <FeatureCard
               icon={<ArmoryIcon />}
               title="Armory"
-              desc="10 Ausrüstungsslots im Diablo-Stil. Behalte den Überblick über dein komplettes Build auf einen Blick."
+              desc="10 equipment slots in the Diablo style. Keep track of your complete build at a single glance."
               delay={0.15}
               from="bottom"
             />
             <FeatureCard
               icon={<CompareIcon />}
               title="Gear Compare"
-              desc="Vergleiche zwei Items nebeneinander. Grüne und rote Werte zeigen dir sofort was ein Upgrade ist."
+              desc="Compare two items side by side. Green and red values instantly show you what's an upgrade."
               delay={0.3}
               from="right"
             />
@@ -416,15 +444,15 @@ export default function LandingClient() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 max-w-4xl mx-auto">
             <FeatureCard
               icon={<BuildIcon />}
-              title="Build-Manager"
-              desc="Speichere komplette Builds, benenne sie, und wechsle zwischen verschiedenen Builds für Leveling und Endgame."
+              title="Build Manager"
+              desc="Save complete builds, name them, and switch between different setups for leveling and endgame."
               delay={0.1}
               from="left"
             />
             <FeatureCard
               icon={<CloudIcon />}
-              title="Cloud-Sync"
-              desc="Deine Items und Builds sind an deinen Battle.net Account gebunden — überall verfügbar, immer aktuell."
+              title="Cloud Sync"
+              desc="Your items and builds are tied to your Battle.net account — available everywhere, always up to date."
               delay={0.25}
               from="right"
             />
@@ -445,33 +473,33 @@ export default function LandingClient() {
           <div>
             <Reveal from="left">
               <p style={{ color: '#c84b1a', fontSize: '0.65rem', letterSpacing: '0.4em', textTransform: 'uppercase', marginBottom: '1rem' }}>
-                ✦ &nbsp; So funktioniert's &nbsp; ✦
+                ✦ &nbsp; How It Works &nbsp; ✦
               </p>
-              <h2 style={{ color: '#c8a84b', fontFamily: 'Georgia, serif', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', letterSpacing: '0.06em', lineHeight: 1.2, marginBottom: '1.2rem' }}>
-                In 3 Schritten<br />zum optimierten Build
+              <h2 style={{ color: '#c8a84b', fontFamily: D4, fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', letterSpacing: '0.08em', lineHeight: 1.2, marginBottom: '1.2rem' }}>
+                3 Steps to Your<br />Perfect Build
               </h2>
               <p style={{ color: '#6b5e4a', fontSize: '0.9rem', lineHeight: 1.8 }}>
-                Kein mühsames Eintippen, kein Zettelchaos. GearGap macht Gear-Verwaltung so einfach wie nie.
+                No tedious typing, no chaos. GearGap makes gear management as simple as it should be.
               </p>
             </Reveal>
           </div>
 
           {/* Right: Steps */}
           <div className="flex flex-col gap-8">
-            <Step num="01" title="Mit Battle.net anmelden"
-              desc="Ein Klick — du brauchst nur deinen Battle.net Account. Kein separates Passwort, kein Formular."
+            <Step num="01" title="Sign in with Battle.net"
+              desc="One click — all you need is your Battle.net account. No separate password, no registration form."
               delay={0} />
             <Reveal delay={0.05}>
               <div className="h-px ml-6" style={{ background: 'linear-gradient(to right, rgba(200,168,75,0.2), transparent)' }} />
             </Reveal>
-            <Step num="02" title="Items scannen oder eintragen"
-              desc="Screenshot uploaden → KI erkennt alle Stats. Oder Items manuell eintragen für maximale Kontrolle."
+            <Step num="02" title="Scan or Enter Items"
+              desc="Upload a screenshot → AI reads all stats. Or enter items manually for maximum control."
               delay={0.15} />
             <Reveal delay={0.2}>
               <div className="h-px ml-6" style={{ background: 'linear-gradient(to right, rgba(200,168,75,0.2), transparent)' }} />
             </Reveal>
-            <Step num="03" title="Vergleichen & optimieren"
-              desc="Lege Items gegeneinander an — GearGap zeigt dir exakt welche Affixe besser oder schlechter sind. Kein Rätselraten."
+            <Step num="03" title="Compare & Optimize"
+              desc="Stack items against each other — GearGap shows you exactly which affixes are better or worse. No more guessing."
               delay={0.3} />
           </div>
         </div>
@@ -494,30 +522,32 @@ export default function LandingClient() {
         <div className="relative z-10 max-w-2xl mx-auto text-center">
           <Reveal>
             <p style={{ color: '#c84b1a', fontSize: '0.65rem', letterSpacing: '0.4em', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
-              ✦ &nbsp; Bereit? &nbsp; ✦
+              ✦ &nbsp; Ready? &nbsp; ✦
             </p>
             <h2
               className="gold-breathe"
-              style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(2rem, 5vw, 3.5rem)', color: '#c8a84b', letterSpacing: '0.06em', marginBottom: '1.5rem', lineHeight: 1.15 }}
+              style={{ fontFamily: D4, fontSize: 'clamp(2rem, 5vw, 3.5rem)', color: '#c8a84b', letterSpacing: '0.08em', marginBottom: '1.5rem', lineHeight: 1.15 }}
             >
-              Schmiede dein<br />perfektes Build
+              Forge Your<br />Perfect Build
             </h2>
             <p style={{ color: '#6b5e4a', fontSize: '0.95rem', lineHeight: 1.8, marginBottom: '2.5rem' }}>
-              Kostenlos. Kein Download. Nur dein Battle.net Account.
+              Free. No download. Just your Battle.net account.
             </p>
 
             <Link
               href="/api/auth/battlenet"
-              className="inline-flex items-center gap-3 px-9 py-4 rounded text-white font-bold text-base"
+              className="inline-flex items-center gap-3 px-9 py-4 rounded text-white font-bold"
               style={{
-                background:  'linear-gradient(135deg, #0e5aa7 0%, #0074E0 50%, #0d8fff 100%)',
-                boxShadow:   '0 4px 40px rgba(0,116,224,0.55), inset 0 1px 0 rgba(255,255,255,0.15)',
-                letterSpacing: '0.04em',
-                transition:  'all 0.3s',
+                background:    'linear-gradient(135deg, #0e5aa7 0%, #0074E0 50%, #0d8fff 100%)',
+                boxShadow:     '0 4px 40px rgba(0,116,224,0.55), inset 0 1px 0 rgba(255,255,255,0.15)',
+                fontFamily:    D4,
+                fontSize:      '0.8rem',
+                letterSpacing: '0.12em',
+                transition:    'all 0.3s',
               }}
             >
               <BnetIcon size={22} />
-              Jetzt mit Battle.net starten
+              Play for Free with Battle.net
             </Link>
           </Reveal>
         </div>
@@ -526,7 +556,7 @@ export default function LandingClient() {
       {/* ══════════════════ FOOTER ══════════════════ */}
       <footer style={{ borderTop: '1px solid rgba(200,168,75,0.08)', padding: '2rem 1.5rem', textAlign: 'center' }}>
         <p style={{ color: '#3d3028', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-          GearGap &nbsp;·&nbsp; Nicht offiziell mit Blizzard Entertainment verbunden &nbsp;·&nbsp; Nur BattleTag wird gespeichert
+          GearGap &nbsp;·&nbsp; Not affiliated with Blizzard Entertainment &nbsp;·&nbsp; Only your BattleTag is stored
         </p>
       </footer>
     </div>

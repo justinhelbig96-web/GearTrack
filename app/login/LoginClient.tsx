@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 const ERROR_MESSAGES: Record<string, string> = {
-  denied:  'Login wurde abgebrochen.',
-  invalid: 'Ungültige OAuth-Anfrage.',
-  state:   'Sicherheitsfehler — bitte erneut versuchen.',
-  oauth:   'Battle.net Login fehlgeschlagen — bitte erneut versuchen.',
+  denied:  'Login was cancelled.',
+  invalid: 'Invalid OAuth request.',
+  state:   'Security error — please try again.',
+  oauth:   'Battle.net login failed — please try again.',
 }
 
 interface Ember {
@@ -129,7 +129,7 @@ export default function LoginClient({ error }: { error?: string }) {
           <h1
             className="gold-breathe"
             style={{
-              fontFamily:    'Georgia, serif',
+              fontFamily:    'var(--font-diablo)',
               fontSize:      '2.8rem',
               fontWeight:    700,
               letterSpacing: '0.25em',
@@ -174,11 +174,11 @@ export default function LoginClient({ error }: { error?: string }) {
 
             {/* Heading */}
             <div className="text-center">
-              <h2 style={{ color: '#c5b89a', fontFamily: 'Georgia, serif', fontSize: '0.8rem', letterSpacing: '0.25em', textTransform: 'uppercase' }}>
-                Willkommen, Nephalem
+              <h2 style={{ color: '#c5b89a', fontFamily: 'var(--font-diablo)', fontSize: '0.75rem', letterSpacing: '0.25em', textTransform: 'uppercase' }}>
+                Welcome, Nephalem
               </h2>
               <p style={{ color: '#6b5e4a', fontSize: '0.7rem', marginTop: '0.25rem' }}>
-                Melde dich mit deinem Battle.net Account an
+                Sign in with your Battle.net account
               </p>
             </div>
 
@@ -219,11 +219,11 @@ export default function LoginClient({ error }: { error?: string }) {
                 <path d="M16 2C8.268 2 2 8.268 2 16s6.268 14 14 14 14-6.268 14-14S23.732 2 16 2zm0 2c6.627 0 12 5.373 12 12S22.627 28 16 28 4 22.627 4 16 9.373 4 16 4zm4.5 5.5c-.828 0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5 1.5-.672 1.5-1.5-.672-1.5-1.5-1.5zm-9 0c-.828 0-1.5.672-1.5 1.5S10.672 12.5 11.5 12.5 13 11.828 13 11s-.672-1.5-1.5-1.5zM16 10l-2.5 3.5c-.648-.31-1.38-.5-2-.5v-1.5L16 10zm0 0l5 1.5V13c-.62 0-1.352.19-2 .5L16 10zm-4 6.5c0 .828.672 1.5 1.5 1.5a1.5 1.5 0 0 0 0-3c-.828 0-1.5.672-1.5 1.5zm5 0c0 .828.672 1.5 1.5 1.5a1.5 1.5 0 0 0 0-3c-.828 0-1.5.672-1.5 1.5zm-5.5 3.5L16 22l4.5-2-.5-2.5a3.49 3.49 0 0 1-2 .5 3.49 3.49 0 0 1-2-.5l-.5 2.5z"/>
               </svg>
 
-              <span className="relative tracking-wide">Mit Battle.net anmelden</span>
+              <span className="relative tracking-wide" style={{ fontFamily: 'var(--font-diablo)', fontSize: '0.75rem', letterSpacing: '0.12em' }}>Sign in with Battle.net</span>
             </Link>
 
             <p style={{ color: 'rgba(107,94,74,0.7)', fontSize: '0.6rem', textAlign: 'center', lineHeight: 1.7 }}>
-              Nur dein BattleTag wird gespeichert &nbsp;·&nbsp; Kein Spielzugriff &nbsp;·&nbsp; Kein Passwort
+              Only your BattleTag is stored &nbsp;·&nbsp; No game access &nbsp;·&nbsp; No password
             </p>
           </div>
 
