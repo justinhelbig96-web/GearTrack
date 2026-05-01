@@ -57,4 +57,45 @@
   .rarity-unique-text {
     text-shadow: 0 0 8px rgba(212,175,55,0.7);
   }
+
+  /* Login page — ember particles */
+  @keyframes ember-rise {
+    0%   { transform: translateY(0) scale(1);    opacity: 0; }
+    10%  { opacity: 1; }
+    85%  { opacity: 0.7; }
+    100% { transform: translateY(-105vh) scale(0.4); opacity: 0; }
+  }
+
+  /* Login page — hell gate pulse */
+  @keyframes hellglow-pulse {
+    0%, 100% { opacity: 0.3; transform: translateX(-50%) scaleX(1); }
+    50%       { opacity: 0.7; transform: translateX(-50%) scaleX(1.08); }
+  }
+
+  /* Login page — gold text breathe */
+  @keyframes gold-breathe {
+    0%, 100% { text-shadow: 0 0 30px rgba(200,168,75,0.5), 0 0 60px rgba(200,100,0,0.2); }
+    50%       { text-shadow: 0 0 60px rgba(200,168,75,0.9), 0 0 120px rgba(200,100,0,0.5), 0 0 180px rgba(200,168,75,0.15); }
+  }
+
+  /* Login page — card entrance */
+  @keyframes card-enter {
+    0%   { opacity: 0; transform: translateY(24px) scale(0.97); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Login page — border shimmer */
+  @keyframes border-shimmer {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .login-card-enter {
+    animation: card-enter 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .gold-breathe {
+    animation: gold-breathe 3s ease-in-out infinite;
+  }
 }
