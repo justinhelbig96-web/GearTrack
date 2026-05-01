@@ -98,4 +98,12 @@
   .gold-breathe {
     animation: gold-breathe 3s ease-in-out infinite;
   }
+
+  /* Scroll indicator dot */
+  @keyframes scrollDot {
+    0%   { transform: translateY(0);   opacity: 1; }
+    60%  { transform: translateY(12px); opacity: 0; }
+    61%  { transform: translateY(0);   opacity: 0; }
+    100% { transform: translateY(0);   opacity: 1; }
+  }
 }
