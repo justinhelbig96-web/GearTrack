@@ -7,14 +7,24 @@ const AUTH_URL     = 'https://oauth.battle.net/authorize'
 const TOKEN_URL    = 'https://oauth.battle.net/token'
 const USERINFO_URL = 'https://oauth.battle.net/userinfo'
 
+/** Returns the absolute callback URL, works in dev and on Vercel */
+export function getRedirectUri(): string {
+  // BATTLENET_REDIRECT_URI takes priority (set this in Vercel)
+  if (process.env.BATTLENET_REDIRECT_URI) return process.env.BATTLENET_REDIRECT_URI
+  // Vercel injects VERCEL_URL automatically (no https prefix)
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}/api/auth/callback/battlenet`
+  // Local dev fallback
+  return 'http://localhost:3000/api/auth/callback/battlenet'
+}
+
 export function getBattleNetAuthUrl(state: string): string {
-  if (!process.env.BATTLENET_CLIENT_ID || !process.env.BATTLENET_REDIRECT_URI) {
-    throw new Error('BATTLENET_CLIENT_ID and BATTLENET_REDIRECT_URI must be set')
+  if (!process.env.BATTLENET_CLIENT_ID) {
+    throw new Error('BATTLENET_CLIENT_ID must be set')
   }
 
   const params = new URLSearchParams({
     client_id:     process.env.BATTLENET_CLIENT_ID,
-    redirect_uri:  process.env.BATTLENET_REDIRECT_URI,
+    redirect_uri:  getRedirectUri(),
     response_type: 'code',
     scope:         'openid',
     state,
@@ -37,7 +47,7 @@ export async function exchangeCodeForToken(code: string): Promise<string> {
     body: new URLSearchParams({
       grant_type:   'authorization_code',
       code,
-      redirect_uri: process.env.BATTLENET_REDIRECT_URI!,
+      redirect_uri: getRedirectUri(),
     }),
   })
 
