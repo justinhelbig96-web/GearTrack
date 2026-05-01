@@ -115,6 +115,7 @@ interface SlotTileProps {
   uploading?: boolean
   targetAffixes?: string[]
   targetGreaterAffixes?: string[]
+  targetItemName?: string
   onUpload: (slot: GearSlot, file: File) => void
   onSelect: (slot: GearSlot) => void
   selected: boolean
@@ -122,10 +123,11 @@ interface SlotTileProps {
 
 function SlotTile({
   slot, label, item, imageUrl, uploading,
-  targetAffixes, onUpload, onSelect, selected,
+  targetAffixes, targetItemName, onUpload, onSelect, selected,
 }: SlotTileProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const hasItem  = !!item
+  const hasBuildTarget = !!targetItemName && !hasItem
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -152,6 +154,7 @@ function SlotTile({
   const borderCol = selected
     ? 'rgba(200,168,75,0.9)'
     : hasItem ? 'rgba(90,65,35,0.65)'
+    : hasBuildTarget ? 'rgba(60,80,120,0.55)'
     : 'rgba(50,38,25,0.38)'
 
   const tileShadow = [
@@ -200,9 +203,24 @@ function SlotTile({
           }} />
         ))}
 
-        {/* Image or icon */}
+        {/* Image, icon, or build target name */}
         {imageUrl ? (
           <img src={imageUrl} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : hasBuildTarget ? (
+          <div style={{
+            width: '100%', height: '100%',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            padding: '6px 5px', gap: 4,
+          }}>
+            <div style={{ color: '#5a7aaa', opacity: 0.55, flexShrink: 0 }}>{ICONS[slot]}</div>
+            <span style={{
+              color: '#7ea4cc', fontSize: '0.44rem', fontFamily: D4,
+              letterSpacing: '0.04em', textAlign: 'center', lineHeight: 1.3,
+              wordBreak: 'break-word', opacity: 0.9,
+            }}>
+              {targetItemName}
+            </span>
+          </div>
         ) : (
           <div style={{
             width: '100%', height: '100%',
@@ -248,7 +266,7 @@ function SlotTile({
       {/* Label below tile */}
       <span style={{
         fontFamily: D4, fontSize: '0.52rem', letterSpacing: '0.2em', textTransform: 'uppercase',
-        color: selected ? '#c8a84b' : hasItem ? '#5a4a30' : '#2e2418',
+        color: selected ? '#c8a84b' : hasItem ? '#5a4a30' : hasBuildTarget ? '#4a6080' : '#2e2418',
         transition: 'color 0.18s', userSelect: 'none',
       }}>
         {label}
@@ -723,6 +741,7 @@ export default function GearScreenClient({
     uploading:             inventory[slot]?.uploading,
     targetAffixes:         targetBuild[slot]?.affixes,
     targetGreaterAffixes:  targetBuild[slot]?.greaterAffixes,
+    targetItemName:        targetBuild[slot]?.itemName,
     onUpload:              handleUpload,
     onSelect:              (s: GearSlot) => { setSelectedSlot(s); setBuildPanelOpen(false) },
   })

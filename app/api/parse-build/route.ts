@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 interface SlotData {
   affixes: string[]
   greaterAffixes: string[]
+  itemName?: string
   aspect?: string
   notes?: string
 }
@@ -111,6 +112,93 @@ function parseGenericText(text: string): ParsedBuild {
 }
 
 /**
+ * d4builds overview section: [IMG:ItemName] rune rune ItemName SlotLabel
+ * Scan only the overview text (before "Gear Stats") and pair img alts with slot labels.
+ */
+function extractD4ItemNames(overviewText: string): Partial<Record<GearSlot, string>> {
+  const result: Partial<Record<GearSlot, string>> = {}
+
+  const SKIP = new Set([
+    'cir','thul','igni','mot','ral','ort','ith','nef','el','eld','tir',
+    'sapphire','diamond','amethyst','ruby','emerald','skull','topaz','jade','seal','image',
+  ])
+  const SKIP_RE = /background|selected|logo|icon|arrow|shard|fragment|node|category|twitch|youtube|share|save|gear|skill|paragon|character|warplan|note|diablo/i
+
+  const SLOT_TEXT: [RegExp, GearSlot][] = [
+    [/\bHelm\b/i,          'HELMET'],
+    [/\bChest\s+Armor\b/i, 'CHEST'],
+    [/\bGloves\b/i,        'GLOVES'],
+    [/\bPants\b/i,         'PANTS'],
+    [/\bBoots\b/i,         'BOOTS'],
+    [/\bAmulet\b/i,        'AMULET'],
+    [/\bRing\s+1\b/i,      'RING1'],
+    [/\bRing\s+2\b/i,      'RING2'],
+    [/\bWeapon\b/i,        'MAIN_HAND'],
+    [/\bOffhand\b/i,       'OFF_HAND'],
+  ]
+
+  const imgRe = /\[IMG:([^\]]+)\]/g
+  let m: RegExpExecArray | null
+  while ((m = imgRe.exec(overviewText)) !== null) {
+    const alt = m[1].trim()
+    const lower = alt.toLowerCase()
+    if (alt.length < 3 || SKIP.has(lower) || SKIP_RE.test(alt)) continue
+
+    const ahead = overviewText.slice(m.index + m[0].length, m.index + m[0].length + 250)
+    if (!ahead.includes(alt.slice(0, Math.min(8, alt.length)))) continue
+
+    for (const [slotRe, slot] of SLOT_TEXT) {
+      if (result[slot]) continue
+      if (slotRe.test(ahead)) { result[slot] = alt; break }
+    }
+  }
+  return result
+}
+
+/**
+ * mobalytics.gg: affixes are client-side only.
+ * Item names ARE server-rendered: "1 Helm DeathlessVisage", "2 Chest armor Shroud..."
+ */
+function parseMobalytics(html: string): ParsedBuild | null {
+  const text = html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&#?\w+;/g, ' ')
+
+  const MOBALYTICS_SLOT_MAP: [RegExp, GearSlot][] = [
+    [/\bHelm(?:et)?\b/i,          'HELMET'],
+    [/\bChest\s*armo(?:r|ur)?\b/i,'CHEST'],
+    [/\bGloves?\b/i,              'GLOVES'],
+    [/\bPants?\b/i,               'PANTS'],
+    [/\bBoots?\b/i,               'BOOTS'],
+    [/\bAmulet\b/i,               'AMULET'],
+    [/\bRing\s*1\b/i,             'RING1'],
+    [/\bRing\s*2\b/i,             'RING2'],
+    [/\bWeapon\b/i,               'MAIN_HAND'],
+    [/\bOffhand\b/i,              'OFF_HAND'],
+  ]
+
+  const build: ParsedBuild = {}
+  // "N SlotLabel ItemName" — stop before next entry or "Equipment"
+  const entryRe = /\b(\d+)\s+(Helm(?:et)?|Chest\s*armo(?:r|ur)?|Gloves?|Pants?|Boots?|Amulet|Ring\s*[12]|Weapon|Offhand)\s+([\w'][\w\s'',.`\u2019-]{2,55}?)(?=\s{3,}|\s+\d+\s+(?:Helm|Chest|Gloves|Pants|Boots|Amulet|Ring|Weapon|Offhand)|Equipment|\s*$)/gi
+  let m: RegExpExecArray | null
+  while ((m = entryRe.exec(text)) !== null) {
+    const slotText = m[2]
+    const itemName = m[3].trim()
+    for (const [re, slot] of MOBALYTICS_SLOT_MAP) {
+      if (!re.test(slotText) || itemName.length < 2) continue
+      if (!build[slot]) build[slot] = { affixes: [], greaterAffixes: [], itemName }
+      else if (!build[slot]!.itemName) build[slot]!.itemName = itemName
+      break
+    }
+  }
+  return Object.keys(build).length > 0 ? build : null
+}
+
+/**
  * Parse d4builds.gg HTML by converting <img alt="..."> into text markers.
  * The site uses:
  *   <img alt="Chest Armor">  → slot header
@@ -194,6 +282,14 @@ function parseD4BuildsHTML(html: string): ParsedBuild | null {
     }
   }
 
+  // Extract item names from the overview section (before "Gear Stats")
+  const overviewText = withMarkers.split(/Gear\s+Stats/i)[0]
+  const itemNames = extractD4ItemNames(overviewText)
+  for (const [slot, name] of Object.entries(itemNames) as [GearSlot, string][]) {
+    if (!build[slot]) build[slot] = { affixes: [], greaterAffixes: [] }
+    build[slot]!.itemName = name
+  }
+
   return Object.keys(build).length > 0 ? build : null
 }
 
@@ -227,11 +323,20 @@ export async function POST(req: Request) {
     }
 
     const html = await response.text()
+    const urlLower = url.toLowerCase()
 
-    // 1. Try alt-text aware parse (works for d4builds.gg and similar sites)
-    let build = parseD4BuildsHTML(html)
+    // 1. Route by domain for best results
+    let build: ParsedBuild | null = null
+    if (urlLower.includes('mobalytics.gg')) {
+      build = parseMobalytics(html)
+    } else if (urlLower.includes('d4builds.gg')) {
+      build = parseD4BuildsHTML(html)
+    } else {
+      // 2. Try generic alt-text aware parse first
+      build = parseD4BuildsHTML(html)
+    }
 
-    // 2. Fall back to text-based parse for other sites
+    // 3. Fall back to text-based parse
     if (!build || Object.keys(build).length === 0) {
       const text = html
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
@@ -242,7 +347,6 @@ export async function POST(req: Request) {
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
         .replace(/&#?\w+;/g, ' ')
-
       build = parseGenericText(text)
     }
 
