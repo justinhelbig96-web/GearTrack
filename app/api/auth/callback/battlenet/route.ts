@@ -4,6 +4,8 @@ import { exchangeCodeForToken, getBattleNetUser } from '@/lib/auth/battlenet'
 import { prisma } from '@/lib/db/prisma'
 import { createSessionToken, setSessionCookie } from '@/lib/auth/session'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code  = searchParams.get('code')
