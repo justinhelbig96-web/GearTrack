@@ -109,35 +109,89 @@ function parseGenericText(text: string): ParsedBuild {
   return build
 }
 
-/** Try to parse d4builds.gg JSON from page HTML */
-function parseD4Builds(html: string): ParsedBuild | null {
-  // d4builds stores build data in __NEXT_DATA__ or window.__data__
-  const jsonMatch = html.match(/"buildData"\s*:\s*(\{.+?\})\s*[,}]/) ||
-                    html.match(/window\.__BUILD_DATA__\s*=\s*(\{.+?\});/)
+/**
+ * Parse d4builds.gg HTML by converting <img alt="..."> into text markers.
+ * The site uses:
+ *   <img alt="Chest Armor">  → slot header
+ *   <img alt="greater affix"> → marks the next text as a Greater Affix
+ *   <img alt="Tempering Stat"> → marks the next text as a tempering affix
+ */
+function parseD4BuildsHTML(html: string): ParsedBuild | null {
+  const SLOT_ALT_MAP: Record<string, GearSlot> = {
+    'helm':        'HELMET',
+    'helmet':      'HELMET',
+    'chest armor': 'CHEST',
+    'gloves':      'GLOVES',
+    'pants':       'PANTS',
+    'boots':       'BOOTS',
+    'amulet':      'AMULET',
+    'ring 1':      'RING1',
+    'ring 2':      'RING2',
+    'weapon':      'MAIN_HAND',
+    'offhand':     'OFF_HAND',
+    'off hand':    'OFF_HAND',
+  }
 
-  if (jsonMatch) {
-    try {
-      const data = JSON.parse(jsonMatch[1])
-      // If we got structured data, try to map it
-      if (data.slots) {
-        const build: ParsedBuild = {}
-        for (const [key, val] of Object.entries<Record<string, unknown>>(data.slots)) {
-          const slot = detectSlot(key)
-          if (slot && Array.isArray(val.affixes)) {
-            build[slot] = {
-              affixes: val.affixes.map(String),
-              greaterAffixes: (val.greaterAffixes as string[] ?? []).map(String),
-              aspect: val.aspect ? String(val.aspect) : undefined,
-            }
-          }
-        }
-        return Object.keys(build).length > 0 ? build : null
+  // Replace <img alt="..."> with a placeholder marker, then strip remaining tags
+  const withMarkers = html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<img[^>]+alt="([^"]*)"[^>]*\/?>/gi, (_m, alt: string) => ` [IMG:${alt}] `)
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#?\w+;/g, ' ')
+
+  // Split on [IMG:...] — after split with capture group:
+  //   even indices = text between markers, odd indices = img alt values
+  const tokens = withMarkers.split(/\[IMG:([^\]]+)\]/g)
+
+  const build: ParsedBuild = {}
+  let currentSlot: GearSlot | null = null
+  let nextIsGA = false
+  let nextIsTempering = false
+
+  for (let i = 0; i < tokens.length; i++) {
+    const isImg = i % 2 === 1
+    const val = tokens[i].trim()
+    if (!val) continue
+
+    if (isImg) {
+      const alt = val.toLowerCase()
+      const slot = SLOT_ALT_MAP[alt]
+      if (slot) {
+        currentSlot = slot
+        nextIsGA = false
+        nextIsTempering = false
+        if (!build[currentSlot]) build[currentSlot] = { affixes: [], greaterAffixes: [] }
+      } else if (alt === 'greater affix') {
+        nextIsGA = true
+        nextIsTempering = false
+      } else if (alt.includes('tempering')) {
+        nextIsTempering = true
+        nextIsGA = false
+      } else {
+        // gem, skill, or other decorative image — reset wait flags
+        nextIsGA = false
+        nextIsTempering = false
       }
-    } catch {
-      // fall through
+    } else if (currentSlot && (nextIsGA || nextIsTempering)) {
+      const affix = val.replace(/\s+/g, ' ').trim()
+      if (affix.length >= 2 && affix.length <= 100) {
+        const slotData = build[currentSlot]!
+        if (!slotData.affixes.includes(affix)) {
+          slotData.affixes.push(affix)
+          if (nextIsGA) slotData.greaterAffixes.push(affix)
+        }
+      }
+      nextIsGA = false
+      nextIsTempering = false
     }
   }
-  return null
+
+  return Object.keys(build).length > 0 ? build : null
 }
 
 export async function POST(req: Request) {
@@ -171,12 +225,11 @@ export async function POST(req: Request) {
 
     const html = await response.text()
 
-    // Try structured parse first
-    let build = parseD4Builds(html)
+    // 1. Try alt-text aware parse (works for d4builds.gg and similar sites)
+    let build = parseD4BuildsHTML(html)
 
-    // Fall back to text-based parse
+    // 2. Fall back to text-based parse for other sites
     if (!build || Object.keys(build).length === 0) {
-      // Strip HTML tags
       const text = html
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
