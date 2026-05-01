@@ -7,11 +7,11 @@ import type { ParsedBuild } from '@/app/api/parse-build/route'
 const D4 = 'var(--font-diablo)'
 
 /* ─── Layout constants ─────────────────────────────────────── */
-const T  = 96   // tile size px
-const GL = 18   // gap between left-column slots
-const GR = 56   // gap between right-column slots
-const PR = 64   // right-column padding-top (aligns Amulet at neck level)
-const CW = 320  // center portrait width
+const T  = 120  // tile size px
+const GL = 24   // gap between left-column slots
+const GR = 72   // gap between right-column slots
+const PR = 80   // right-column padding-top (aligns Amulet at neck level)
+const CW = 390  // center portrait width
 
 /* ─── Slot definitions ─────────────────────────────────────── */
 const LEFT_SLOTS: { slot: GearSlot; label: string }[] = [
@@ -216,7 +216,7 @@ function SlotTile({
           }}>
             <div style={{ color: '#5a7aaa', opacity: 0.55, flexShrink: 0 }}>{ICONS[slot]}</div>
             <span style={{
-              color: '#7ea4cc', fontSize: '0.44rem', fontFamily: D4,
+              color: '#7ea4cc', fontSize: '0.62rem', fontFamily: D4,
               letterSpacing: '0.04em', textAlign: 'center', lineHeight: 1.3,
               wordBreak: 'break-word', opacity: 0.9,
             }}>
@@ -244,7 +244,7 @@ function SlotTile({
             style={{ background: 'rgba(0,0,0,0.5)', pointerEvents: 'none' }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            <span style={{ color: '#c8a84b', fontSize: '0.5rem', fontFamily: D4, letterSpacing: '0.1em', marginTop: 4 }}>View</span>
+            <span style={{ color: '#c8a84b', fontSize: '0.68rem', fontFamily: D4, letterSpacing: '0.1em', marginTop: 4 }}>View</span>
           </div>
         )}
 
@@ -255,7 +255,7 @@ function SlotTile({
 
         {/* Greater affix indicator */}
         {greaterCount > 0 && (
-          <div style={{ position: 'absolute', top: 3, right: 4, color: '#c8a84b', fontSize: '0.5rem', lineHeight: 1, textShadow: '0 0 6px #c8a84b', letterSpacing: '-0.5px' }}>
+          <div style={{ position: 'absolute', top: 3, right: 4, color: '#c8a84b', fontSize: '0.68rem', lineHeight: 1, textShadow: '0 0 6px #c8a84b', letterSpacing: '-0.5px' }}>
             {'✦'.repeat(greaterCount)}
           </div>
         )}
@@ -263,7 +263,7 @@ function SlotTile({
 
       {/* Label below tile */}
       <span style={{
-        fontFamily: D4, fontSize: '0.52rem', letterSpacing: '0.2em', textTransform: 'uppercase',
+        fontFamily: D4, fontSize: '0.72rem', letterSpacing: '0.2em', textTransform: 'uppercase',
         color: selected ? '#c8a84b' : hasItem ? '#5a4a30' : hasBuildTarget ? '#4a6080' : '#2e2418',
         transition: 'color 0.18s', userSelect: 'none',
       }}>
@@ -289,7 +289,7 @@ function SlotTile({
             {/* Re-upload — bottom-right corner */}
             <button
               onClick={() => inputRef.current?.click()}
-              style={{ position: 'absolute', bottom: 12, right: 12, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(10,7,3,0.92)', border: '1px solid rgba(200,168,75,0.35)', borderRadius: 3, padding: '6px 12px', color: '#c8a84b', fontFamily: D4, fontSize: '0.55rem', letterSpacing: '0.12em', cursor: 'pointer' }}
+              style={{ position: 'absolute', bottom: 12, right: 12, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(10,7,3,0.92)', border: '1px solid rgba(200,168,75,0.35)', borderRadius: 3, padding: '6px 12px', color: '#c8a84b', fontFamily: D4, fontSize: '0.72rem', letterSpacing: '0.12em', cursor: 'pointer' }}
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               New Upload
@@ -719,7 +719,7 @@ function BuildSlotTile({ slot, label, build, myItem, selected, onSelect }: {
         role="button"
         onClick={() => onSelect(slot)}
         style={{
-          width: 80, height: 80, position: 'relative', cursor: 'pointer',
+          width: 96, height: 96, position: 'relative', cursor: 'pointer',
           background: 'radial-gradient(ellipse at 50% 30%, rgba(14,11,18,0.93) 0%, rgba(5,4,8,0.97) 100%)',
           border: `2px solid ${borderCol}`, borderRadius: 3, overflow: 'hidden',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -743,14 +743,14 @@ function BuildSlotTile({ slot, label, build, myItem, selected, onSelect }: {
 
         {/* Badge */}
         {build && affixes.length > 0 && (
-          <div style={{ position: 'absolute', top: 2, right: 3, fontFamily: D4, fontSize: '0.44rem', color: matchColor ?? '#4a3c28' }}>
+          <div style={{ position: 'absolute', top: 2, right: 3, fontFamily: D4, fontSize: '0.6rem', color: matchColor ?? '#4a3c28' }}>
             {myItem ? `${matched}/${affixes.length}` : `?/${affixes.length}`}
           </div>
         )}
 
         {/* Item name or icon */}
         {build?.itemName ? (
-          <span style={{ fontSize: '0.41rem', fontFamily: D4, color: '#a08060', textAlign: 'center', lineHeight: 1.25, wordBreak: 'break-all', padding: '0 2px' }}>{build.itemName}</span>
+          <span style={{ fontSize: '0.58rem', fontFamily: D4, color: '#a08060', textAlign: 'center', lineHeight: 1.25, wordBreak: 'break-all', padding: '0 2px' }}>{build.itemName}</span>
         ) : (
           <div style={{ color: '#c8a84b', opacity: 0.11 }}>{ICONS[slot]}</div>
         )}
@@ -760,7 +760,7 @@ function BuildSlotTile({ slot, label, build, myItem, selected, onSelect }: {
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: matchColor, opacity: 0.75 }} />
         )}
       </div>
-      <span style={{ fontFamily: D4, fontSize: '0.44rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: selected ? '#c8a84b' : '#2e2418' }}>{label}</span>
+      <span style={{ fontFamily: D4, fontSize: '0.62rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: selected ? '#c8a84b' : '#2e2418' }}>{label}</span>
     </div>
   )
 }
@@ -833,9 +833,9 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
       {/* ── Header ── */}
       <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(200,168,75,0.08)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontFamily: D4, color: '#c8a84b', fontSize: '0.68rem', letterSpacing: '0.22em', flex: 1 }}>BUILD TARGET</span>
+          <span style={{ fontFamily: D4, color: '#c8a84b', fontSize: '0.88rem', letterSpacing: '0.22em', flex: 1 }}>BUILD TARGET</span>
           {hasBuild && (
-            <button onClick={onClear} style={{ color: '#5a3a2a', fontSize: '0.58rem', fontFamily: D4, letterSpacing: '0.1em', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear</button>
+            <button onClick={onClear} style={{ color: '#5a3a2a', fontSize: '0.76rem', fontFamily: D4, letterSpacing: '0.1em', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear</button>
           )}
         </div>
 
@@ -843,7 +843,7 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
         <div style={{ display: 'flex', gap: 0, marginBottom: 8, borderRadius: 3, overflow: 'hidden', border: '1px solid rgba(200,168,75,0.15)' }}>
           {(['url', 'paste'] as const).map(m => (
             <button key={m} onClick={() => setMode(m)} style={{
-              flex: 1, padding: '5px 0', fontFamily: D4, fontSize: '0.55rem', letterSpacing: '0.1em',
+              flex: 1, padding: '5px 0', fontFamily: D4, fontSize: '0.72rem', letterSpacing: '0.1em',
               textTransform: 'uppercase', cursor: 'pointer', border: 'none',
               background: mode === m ? 'rgba(200,168,75,0.12)' : 'rgba(0,0,0,0.4)',
               color: mode === m ? '#c8a84b' : '#3a2e1c',
@@ -862,10 +862,10 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
               onChange={e => setUrl(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleScan()}
               placeholder="d4builds.gg / maxroll.gg / mobalytics.gg…"
-              style={{ flex: 1, background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(200,168,75,0.14)', borderRadius: 3, padding: '6px 9px', color: '#c5b89a', fontSize: '0.62rem', outline: 'none' }}
+              style={{ flex: 1, background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(200,168,75,0.14)', borderRadius: 3, padding: '6px 9px', color: '#c5b89a', fontSize: '0.8rem', outline: 'none' }}
             />
             <button onClick={handleScan} disabled={loading || !url.trim()}
-              style={{ fontFamily: D4, fontSize: '0.58rem', letterSpacing: '0.08em', background: loading ? 'rgba(200,168,75,0.06)' : 'linear-gradient(135deg,#2a1e0f,#c8a84b)', color: loading ? '#6b5e4a' : '#0a0a0f', border: '1px solid rgba(200,168,75,0.25)', borderRadius: 3, padding: '6px 11px', cursor: loading ? 'not-allowed' : 'pointer', flexShrink: 0 }}>
+              style={{ fontFamily: D4, fontSize: '0.75rem', letterSpacing: '0.08em', background: loading ? 'rgba(200,168,75,0.06)' : 'linear-gradient(135deg,#2a1e0f,#c8a84b)', color: loading ? '#6b5e4a' : '#0a0a0f', border: '1px solid rgba(200,168,75,0.25)', borderRadius: 3, padding: '6px 11px', cursor: loading ? 'not-allowed' : 'pointer', flexShrink: 0 }}>
               {loading ? '…' : 'Scan'}
             </button>
           </div>
@@ -874,7 +874,7 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
         {/* Paste input */}
         {mode === 'paste' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <p style={{ color: '#3a2e1c', fontSize: '0.56rem', lineHeight: 1.5 }}>
+            <p style={{ color: '#3a2e1c', fontSize: '0.74rem', lineHeight: 1.5 }}>
               Scroll to <span style={{ color: '#c8a84b' }}>Gear Stats</span> on d4builds.gg → alles markieren → kopieren → hier einfügen.
             </p>
             <textarea
@@ -882,24 +882,24 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
               onChange={e => setText(e.target.value)}
               placeholder={'Helm\n27% Critical Strike Chance\n25% Lucky Hit Chance\n...\nChest Armor\nWillpower\n...'}
               rows={6}
-              style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(200,168,75,0.14)', borderRadius: 3, padding: '7px 9px', color: '#c5b89a', fontSize: '0.62rem', outline: 'none', resize: 'vertical', fontFamily: 'monospace', lineHeight: 1.5 }}
+              style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(200,168,75,0.14)', borderRadius: 3, padding: '7px 9px', color: '#c5b89a', fontSize: '0.8rem', outline: 'none', resize: 'vertical', fontFamily: 'monospace', lineHeight: 1.5 }}
             />
             <button onClick={handleScan} disabled={loading || !text.trim()}
-              style={{ fontFamily: D4, fontSize: '0.58rem', letterSpacing: '0.1em', background: loading ? 'rgba(200,168,75,0.06)' : 'linear-gradient(135deg,#2a1e0f,#c8a84b)', color: loading ? '#6b5e4a' : '#0a0a0f', border: '1px solid rgba(200,168,75,0.25)', borderRadius: 3, padding: '7px', cursor: loading ? 'not-allowed' : 'pointer' }}>
+              style={{ fontFamily: D4, fontSize: '0.75rem', letterSpacing: '0.1em', background: loading ? 'rgba(200,168,75,0.06)' : 'linear-gradient(135deg,#2a1e0f,#c8a84b)', color: loading ? '#6b5e4a' : '#0a0a0f', border: '1px solid rgba(200,168,75,0.25)', borderRadius: 3, padding: '7px', cursor: loading ? 'not-allowed' : 'pointer' }}>
               {loading ? '…' : '⚔ Parse Build Text'}
             </button>
           </div>
         )}
 
         {(note || error) && (
-          <p style={{ fontSize: '0.58rem', marginTop: 5, color: error ? '#ef4444' : '#22c55e', lineHeight: 1.4 }}>{error || note}</p>
+          <p style={{ fontSize: '0.75rem', marginTop: 5, color: error ? '#ef4444' : '#22c55e', lineHeight: 1.4 }}>{error || note}</p>
         )}
       </div>
 
       {/* ── Card grid (d4builds Gear Stats style) ── */}
       {!hasBuild ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.3 }}>
-          <p style={{ color: '#c8a84b', fontFamily: D4, fontSize: '0.58rem', letterSpacing: '0.15em', textAlign: 'center', lineHeight: 1.8 }}>
+          <p style={{ color: '#c8a84b', fontFamily: D4, fontSize: '0.75rem', letterSpacing: '0.15em', textAlign: 'center', lineHeight: 1.8 }}>
             Paste a build URL to start<br />comparing your gear
           </p>
         </div>
@@ -933,9 +933,9 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
                     <div style={{ color: cardCol ?? '#3a2e1c', lineHeight: 0, transform: 'scale(0.45)', transformOrigin: 'left center', width: 16, height: 16, flexShrink: 0, marginRight: -8 }}>
                       {ICONS[slot]}
                     </div>
-                    <span style={{ fontFamily: D4, fontSize: '0.53rem', color: cardCol ?? '#3a2e1c', letterSpacing: '0.1em', textTransform: 'uppercase', flex: 1 }}>{label}</span>
+                    <span style={{ fontFamily: D4, fontSize: '0.7rem', color: cardCol ?? '#3a2e1c', letterSpacing: '0.1em', textTransform: 'uppercase', flex: 1 }}>{label}</span>
                     {affixes.length > 0 && (
-                      <span style={{ fontFamily: D4, fontSize: '0.5rem', color: cardCol ?? '#3a2e1c', flexShrink: 0, marginLeft: 4 }}>
+                      <span style={{ fontFamily: D4, fontSize: '0.65rem', color: cardCol ?? '#3a2e1c', flexShrink: 0, marginLeft: 4 }}>
                         {hasScan ? `${hits}/${affixes.length}` : `·/${affixes.length}`}
                       </span>
                     )}
@@ -943,7 +943,7 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
 
                   {/* Build item name */}
                   {bd?.itemName && (
-                    <div style={{ padding: '3px 9px 0', fontSize: '0.57rem', color: '#886a40', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.5 }}>
+                    <div style={{ padding: '3px 9px 0', fontSize: '0.74rem', color: '#886a40', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.5 }}>
                       {bd.itemName}
                     </div>
                   )}
@@ -951,7 +951,7 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
                   {/* Affixes */}
                   <div style={{ padding: '5px 9px 8px', flex: 1 }}>
                     {!bd || affixes.length === 0 ? (
-                      <span style={{ color: '#251a10', fontSize: '0.54rem' }}>No data</span>
+                      <span style={{ color: '#251a10', fontSize: '0.7rem' }}>No data</span>
                     ) : affixes.map((affix, i) => {
                       const isGA = ga.includes(affix)
                       const hit  = affixMatch(myItem, affix)
@@ -965,13 +965,13 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
                       return (
                         <div key={i} style={{ display: 'flex', gap: 5, marginBottom: 3, alignItems: 'flex-start' }}>
                           <span style={{ color: dotColor, fontSize: '0.5rem', flexShrink: 0, marginTop: '2px' }}>{isGA ? '✦' : '✲'}</span>
-                          <span style={{ fontSize: '0.62rem', lineHeight: 1.3, color: textColor }}>{affix}</span>
+                          <span style={{ fontSize: '0.8rem', lineHeight: 1.3, color: textColor }}>{affix}</span>
                         </div>
                       )
                     })}
                     {!hasScan && affixes.length > 0 && (
                       <div style={{ marginTop: 4, borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: 3 }}>
-                        <span style={{ color: '#2a1e10', fontSize: '0.46rem', fontFamily: D4, letterSpacing: '0.1em' }}>scan to compare</span>
+                        <span style={{ color: '#2a1e10', fontSize: '0.62rem', fontFamily: D4, letterSpacing: '0.1em' }}>scan to compare</span>
                       </div>
                     )}
                   </div>
@@ -1067,15 +1067,15 @@ export default function GearScreenClient({
       {/* ── Top bar ── */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 20px', height: 48, flexShrink: 0,
+        padding: '0 20px', height: 60, flexShrink: 0,
         background: 'rgba(0,0,0,0.6)',
         borderBottom: '1px solid rgba(200,168,75,0.08)',
       }}>
-        <span style={{ fontFamily: D4, color: '#c8a84b', fontSize: '0.9rem', letterSpacing: '0.35em' }}>GearGap</span>
+        <span style={{ fontFamily: D4, color: '#c8a84b', fontSize: '1.15rem', letterSpacing: '0.35em' }}>GearGap</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ color: '#3a2e1c', fontSize: '0.65rem', fontFamily: D4, letterSpacing: '0.1em' }}>{name ?? battleTag}</span>
+          <span style={{ color: '#3a2e1c', fontSize: '0.85rem', fontFamily: D4, letterSpacing: '0.1em' }}>{name ?? battleTag}</span>
           <a href="/api/auth/logout"
-            style={{ color: '#2e2014', fontSize: '0.6rem', fontFamily: D4, letterSpacing: '0.12em', textDecoration: 'none' }}
+            style={{ color: '#2e2014', fontSize: '0.78rem', fontFamily: D4, letterSpacing: '0.12em', textDecoration: 'none' }}
             onMouseEnter={e => (e.currentTarget.style.color = '#c84b1a')}
             onMouseLeave={e => (e.currentTarget.style.color = '#2e2014')}
           >Logout</a>
@@ -1089,7 +1089,7 @@ export default function GearScreenClient({
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 16px', overflow: 'auto' }}>
           <div>
             {/* Section label */}
-            <p style={{ fontFamily: D4, fontSize: '0.52rem', color: '#3a2e1c', letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 }}>Your Gear</p>
+            <p style={{ fontFamily: D4, fontSize: '0.72rem', color: '#3a2e1c', letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 }}>Your Gear</p>
 
             {/* 3-column D4 layout */}
             <div style={{ display: 'flex', alignItems: 'stretch', gap: 16 }}>
@@ -1108,7 +1108,7 @@ export default function GearScreenClient({
             </div>
 
             {Object.values(inventory).every(v => !v?.parsedItem) && (
-              <p style={{ color: '#2a1e10', fontSize: '0.55rem', fontFamily: D4, letterSpacing: '0.18em', textTransform: 'uppercase', textAlign: 'center', marginTop: 14 }}>
+              <p style={{ color: '#2a1e10', fontSize: '0.75rem', fontFamily: D4, letterSpacing: '0.18em', textTransform: 'uppercase', textAlign: 'center', marginTop: 14 }}>
                 Click any slot to upload a gear screenshot
               </p>
             )}
