@@ -33,18 +33,14 @@ export async function GET(request: Request) {
     const accessToken = await exchangeCodeForToken(code)
     const bnUser      = await getBattleNetUser(accessToken)
 
+    const tag  = bnUser.battletag ?? `User#${bnUser.sub}`
+    const name = tag.split('#')[0]
+
     // Upsert user — Battle.net sub is the stable unique ID
     const user = await prisma.user.upsert({
       where:  { blizzardId: bnUser.sub },
-      create: {
-        blizzardId: bnUser.sub,
-        battleTag:  bnUser.battletag,
-        name:       bnUser.battletag.split('#')[0],
-      },
-      update: {
-        battleTag: bnUser.battletag,
-        name:      bnUser.battletag.split('#')[0],
-      },
+      create: { blizzardId: bnUser.sub, battleTag: tag, name },
+      update: { battleTag: tag, name },
     })
 
     const token = await createSessionToken(user.id)
