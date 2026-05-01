@@ -199,6 +199,126 @@ function parseMobalytics(html: string): ParsedBuild | null {
 }
 
 /**
+ * d4builds.gg embeds all build data in __NEXT_DATA__ even though the UI is CSR.
+ * Deep-walk the JSON to find slot-keyed item objects with affix arrays.
+ */
+function parseD4BuildsNextData(html: string): ParsedBuild | null {
+  const m = html.match(/<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i)
+  if (!m) return null
+  let root: unknown
+  try { root = JSON.parse(m[1]) } catch { return null }
+
+  const build: ParsedBuild = {}
+
+  const SLOT_PATTERNS: [RegExp, GearSlot][] = [
+    [/^hel[lm]?$|^helmet$|^head$/i,                                                       'HELMET'],
+    [/^chest[_\s]?armo[ur]?$|^chest$|^body$|^torso$/i,                                    'CHEST'],
+    [/^glov(es?)?$/i,                                                                       'GLOVES'],
+    [/^pants?$|^legs?$|^trousers?$/i,                                                       'PANTS'],
+    [/^boots?$|^feet?$|^shoes?$/i,                                                          'BOOTS'],
+    [/^amulet$|^neck(lace)?$/i,                                                             'AMULET'],
+    [/^ring[_\s]?1$|^ring1$/i,                                                             'RING1'],
+    [/^ring[_\s]?2$|^ring2$/i,                                                             'RING2'],
+    [/^(main[_\s]?hand|weapon|sword|staff|scythe|axe|mace|bow|crossbow|wand|dagger|sickle)$/i, 'MAIN_HAND'],
+    [/^(off[_\s]?hand|focus|shield|offhand|totem|quiver)$/i,                              'OFF_HAND'],
+  ]
+
+  function toSlot(s: string): GearSlot | null {
+    const t = s.trim().toLowerCase()
+    for (const [re, slot] of SLOT_PATTERNS) { if (re.test(t)) return slot }
+    return null
+  }
+
+  function pick(o: Record<string, unknown>, keys: string[]): string | null {
+    for (const k of keys) {
+      if (typeof o[k] === 'string' && (o[k] as string).trim().length > 0) return (o[k] as string).trim()
+    }
+    return null
+  }
+
+  function flatStr(v: unknown, d = 0): string[] {
+    if (d > 5) return []
+    if (typeof v === 'string') return v.length > 2 && v.length < 130 ? [v] : []
+    if (Array.isArray(v)) return v.flatMap(x => flatStr(x, d + 1))
+    if (v && typeof v === 'object') {
+      const o = v as Record<string, unknown>
+      for (const k of ['name', 'text', 'label', 'value', 'desc', 'description', 'stat', 'affix', 'displayText']) {
+        if (typeof o[k] === 'string' && (o[k] as string).length > 2) return [o[k] as string]
+      }
+    }
+    return []
+  }
+
+  function parseItem(obj: unknown): { affixes: string[]; greaterAffixes: string[]; itemName?: string } | null {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null
+    const o = obj as Record<string, unknown>
+    const itemName = pick(o, ['name', 'itemName', 'item_name', 'title', 'label', 'displayName']) ?? undefined
+    let affixes: string[] = []
+    let greaterAffixes: string[] = []
+
+    for (const k of ['affixes', 'stats', 'mods', 'modifiers', 'properties', 'attributes', 'statList']) {
+      if (!Array.isArray(o[k]) || !(o[k] as unknown[]).length) continue
+      const arr = o[k] as unknown[]
+      const out: string[] = []
+      const outGA: string[] = []
+      for (const x of arr) {
+        if (x && typeof x === 'object' && !Array.isArray(x)) {
+          const xo = x as Record<string, unknown>
+          const s = pick(xo, ['name', 'text', 'label', 'value', 'affix', 'description', 'displayText'])
+          if (s && s.length >= 3) {
+            out.push(s)
+            if (xo.isGreater || xo.is_greater || xo.greater || xo.ga || xo.isGA) outGA.push(s)
+          }
+        } else {
+          out.push(...flatStr(x))
+        }
+      }
+      if (out.length) { affixes = out; greaterAffixes = outGA; break }
+    }
+
+    if (!greaterAffixes.length) {
+      for (const k of ['greaterAffixes', 'greater_affixes', 'ga', 'greater']) {
+        if (Array.isArray(o[k])) {
+          greaterAffixes = (o[k] as unknown[]).flatMap(x => flatStr(x)).filter(s => s.length >= 3)
+          if (greaterAffixes.length) break
+        }
+      }
+    }
+
+    return (affixes.length || itemName) ? { affixes, greaterAffixes, itemName } : null
+  }
+
+  function walk(obj: unknown, depth = 0) {
+    if (depth > 14 || !obj || typeof obj !== 'object') return
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        if (item && typeof item === 'object') {
+          const o = item as Record<string, unknown>
+          let slot: GearSlot | null = null
+          for (const k of ['slot', 'type', 'slotType', 'slot_type', 'itemSlot', 'gearSlot', 'position', 'equipSlot']) {
+            if (typeof o[k] === 'string') { slot = toSlot(o[k] as string); if (slot) break }
+          }
+          if (slot) { const d = parseItem(item); if (d && !build[slot]) build[slot] = d }
+        }
+        walk(item, depth + 1)
+      }
+      return
+    }
+    const o = obj as Record<string, unknown>
+    for (const [key, val] of Object.entries(o)) {
+      const slot = toSlot(key)
+      if (slot && val && typeof val === 'object' && !Array.isArray(val)) {
+        const d = parseItem(val); if (d && !build[slot]) build[slot] = d
+      }
+      walk(val, depth + 1)
+    }
+  }
+
+  walk(root)
+  return Object.keys(build).length > 0 ? build : null
+}
+
+/**
  * Parse d4builds.gg HTML by converting <img alt="..."> into text markers.
  * The site uses:
  *   <img alt="Chest Armor">  → slot header
@@ -330,7 +450,8 @@ export async function POST(req: Request) {
     if (urlLower.includes('mobalytics.gg')) {
       build = parseMobalytics(html)
     } else if (urlLower.includes('d4builds.gg')) {
-      build = parseD4BuildsHTML(html)
+      build = parseD4BuildsNextData(html)
+      if (!build || Object.keys(build).length === 0) build = parseD4BuildsHTML(html)
     } else {
       // 2. Try generic alt-text aware parse first
       build = parseD4BuildsHTML(html)
