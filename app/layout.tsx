@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
-import { Cinzel } from 'next/font/google'
+import { Cinzel_Decorative } from 'next/font/google'
 import './globals.css'
 
-const cinzel = Cinzel({
+const cinzel = Cinzel_Decorative({
   subsets: ['latin'],
-  weight: ['400', '600', '700', '900'],
+  weight: ['400', '700', '900'],
   variable: '--font-cinzel',
 })
 
