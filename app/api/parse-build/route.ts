@@ -413,20 +413,112 @@ function parseD4BuildsHTML(html: string): ParsedBuild | null {
   return Object.keys(build).length > 0 ? build : null
 }
 
+/**
+ * Parse the "Gear Stats" text copied directly from d4builds.gg.
+ *
+ * The copied text looks like (slot headers + affix lines, icons become special chars or disappear):
+ *   Helm
+ *   27% Critical Strike Chance
+ *   25% Lucky Hit Chance
+ *   25% Movement Speed
+ *   Chest Armor
+ *   Willpower
+ *   Maximum Resource
+ *   ...
+ *
+ * GA detection: lines immediately after a "✦"-prefixed line or preceded by orange icon are GAs.
+ * Since color is lost, we detect GAs by position (lines with ✦ in front when pasting) or heuristics.
+ */
+function parseGearStatsText(raw: string): ParsedBuild {
+  const build: ParsedBuild = {}
+
+  const SLOT_MAP: [RegExp, GearSlot][] = [
+    [/^helm(?:et)?$/i,                     'HELMET'],
+    [/^chest\s*armo(?:r|ur)?$|^chest$/i,   'CHEST'],
+    [/^gloves?$/i,                          'GLOVES'],
+    [/^pants?$|^legs?$|^trousers?$/i,       'PANTS'],
+    [/^boots?$/i,                           'BOOTS'],
+    [/^amulet$|^necklace$/i,                'AMULET'],
+    [/^ring\s*1$|^ring1$/i,                 'RING1'],
+    [/^ring\s*2$|^ring2$/i,                 'RING2'],
+    [/^(?:main\s*hand|weapon|sword|staff|scythe|axe|mace|bow|crossbow|wand|dagger|sickle)$/i, 'MAIN_HAND'],
+    [/^(?:off\s*hand|focus|shield|offhand|totem|quiver)$/i, 'OFF_HAND'],
+  ]
+
+  function toSlot(s: string): GearSlot | null {
+    for (const [re, slot] of SLOT_MAP) if (re.test(s)) return slot
+    return null
+  }
+
+  // normalise decorative unicode that appears in copy-paste from d4builds
+  const ICON_RE = /^[\s✦✥✧✩✪✫✬✭✮✯✰★☆✱✲✳✴✵✶✷✸✹✺✻✼✽✾✿❀❁❂❃❄❅❆❇❈❉❊❋○●◎◉◌◍◎►◄▶◀▸◂▹◃▷◁▻◅▴▵▾▿△▽→←↑↓↳↵⇒⇐•·‧‣⁃·▪□■◆◇◈⬤⬟⬠❯❮≡≣|—–*\-/\\]+/u
+
+  let currentSlot: GearSlot | null = null
+
+  for (const rawLine of raw.split(/\r?\n/)) {
+    // Strip leading icon characters
+    const line = rawLine.replace(ICON_RE, '').trim()
+    if (!line) continue
+
+    // Check if it's a slot header (short, no digits, matches name)
+    const slot = toSlot(line)
+    if (slot) {
+      currentSlot = slot
+      if (!build[currentSlot]) build[currentSlot] = { affixes: [], greaterAffixes: [] }
+      continue
+    }
+
+    if (!currentSlot) continue
+
+    // Detect GA: if the original line (before stripping) had a leading ✦ char
+    const hadGA = /^[\s]*✦/.test(rawLine)
+
+    // Skip section-title-like lines that aren't affixes
+    if (line.length < 3 || line.length > 120) continue
+    // Skip pure number lines
+    if (/^\d+$/.test(line)) continue
+    // Must look like an affix: has a keyword or a number
+    const isAffix = /\d|\b(damage|life|speed|chance|strike|skill|resource|stat|armor|shield|dodge|regen|multiplier|lucky|movement|attack|critical|willpower|strength|dexterity|intelligence|core|basic|ultimate|passive|ranks?|to all|all stats)\b/i.test(line)
+    if (!isAffix) continue
+
+    const data = build[currentSlot]!
+    if (!data.affixes.includes(line)) {
+      data.affixes.push(line)
+      if (hadGA) data.greaterAffixes.push(line)
+    }
+  }
+
+  return build
+}
+
 export async function POST(req: Request) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  let url: string
+  let url: string | undefined
+  let pastedText: string | undefined
   try {
     const body = await req.json()
-    url = body.url as string
+    url = body.url as string | undefined
+    pastedText = body.text as string | undefined
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
 
+  // ── Paste-text mode ───────────────────────────────────────────
+  if (pastedText?.trim()) {
+    const build = parseGearStatsText(pastedText)
+    const slotCount = Object.keys(build).length
+    return NextResponse.json({
+      build,
+      slotCount,
+      source: 'pasted text',
+      note: slotCount === 0 ? 'No slots detected. Make sure to copy the "Gear Stats" section from d4builds.' : `Detected ${slotCount} slots from pasted text.`,
+    })
+  }
+
   if (!url?.startsWith('http')) {
-    return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
+    return NextResponse.json({ error: 'Provide a URL or paste build text.' }, { status: 400 })
   }
 
   try {

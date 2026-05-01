@@ -779,7 +779,9 @@ interface BuildPanelProps {
 }
 
 function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImport, onClear }: BuildPanelProps) {
-  const [url, setUrl] = useState('')
+  const [mode, setMode]   = useState<'url' | 'paste'>('url')
+  const [url, setUrl]     = useState('')
+  const [text, setText]   = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [note, setNote]   = useState('')
@@ -805,10 +807,13 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
   }
 
   const handleScan = async () => {
-    if (!url.trim()) return
+    const isUrl  = mode === 'url'
+    const value  = isUrl ? url.trim() : text.trim()
+    if (!value) return
     setLoading(true); setError(''); setNote('')
     try {
-      const res  = await fetch('/api/parse-build', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) })
+      const body = isUrl ? { url: value } : { text: value }
+      const res  = await fetch('/api/parse-build', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? 'Failed'); return }
       if (data.slotCount === 0) { setError(data.note ?? 'No slot data found.'); return }
@@ -834,23 +839,57 @@ function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImpo
           )}
         </div>
 
-        {/* URL input row */}
-        <div style={{ display: 'flex', gap: 6 }}>
-          <input
-            value={url}
-            onChange={e => setUrl(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleScan()}
-            placeholder="d4builds.gg / maxroll.gg / mobalytics.gg…"
-            style={{ flex: 1, background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(200,168,75,0.14)', borderRadius: 3, padding: '6px 9px', color: '#c5b89a', fontSize: '0.62rem', outline: 'none' }}
-          />
-          <button
-            onClick={handleScan}
-            disabled={loading || !url.trim()}
-            style={{ fontFamily: D4, fontSize: '0.58rem', letterSpacing: '0.08em', background: loading ? 'rgba(200,168,75,0.06)' : 'linear-gradient(135deg,#2a1e0f,#c8a84b)', color: loading ? '#6b5e4a' : '#0a0a0f', border: '1px solid rgba(200,168,75,0.25)', borderRadius: 3, padding: '6px 11px', cursor: loading ? 'not-allowed' : 'pointer', flexShrink: 0 }}
-          >
-            {loading ? '…' : '⚔ Scan'}
-          </button>
+        {/* Mode tabs */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 8, borderRadius: 3, overflow: 'hidden', border: '1px solid rgba(200,168,75,0.15)' }}>
+          {(['url', 'paste'] as const).map(m => (
+            <button key={m} onClick={() => setMode(m)} style={{
+              flex: 1, padding: '5px 0', fontFamily: D4, fontSize: '0.55rem', letterSpacing: '0.1em',
+              textTransform: 'uppercase', cursor: 'pointer', border: 'none',
+              background: mode === m ? 'rgba(200,168,75,0.12)' : 'rgba(0,0,0,0.4)',
+              color: mode === m ? '#c8a84b' : '#3a2e1c',
+              borderRight: m === 'url' ? '1px solid rgba(200,168,75,0.1)' : undefined,
+            }}>
+              {m === 'url' ? '⚔ URL' : '📋 Text Paste'}
+            </button>
+          ))}
         </div>
+
+        {/* URL input */}
+        {mode === 'url' && (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              value={url}
+              onChange={e => setUrl(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleScan()}
+              placeholder="d4builds.gg / maxroll.gg / mobalytics.gg…"
+              style={{ flex: 1, background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(200,168,75,0.14)', borderRadius: 3, padding: '6px 9px', color: '#c5b89a', fontSize: '0.62rem', outline: 'none' }}
+            />
+            <button onClick={handleScan} disabled={loading || !url.trim()}
+              style={{ fontFamily: D4, fontSize: '0.58rem', letterSpacing: '0.08em', background: loading ? 'rgba(200,168,75,0.06)' : 'linear-gradient(135deg,#2a1e0f,#c8a84b)', color: loading ? '#6b5e4a' : '#0a0a0f', border: '1px solid rgba(200,168,75,0.25)', borderRadius: 3, padding: '6px 11px', cursor: loading ? 'not-allowed' : 'pointer', flexShrink: 0 }}>
+              {loading ? '…' : 'Scan'}
+            </button>
+          </div>
+        )}
+
+        {/* Paste input */}
+        {mode === 'paste' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <p style={{ color: '#3a2e1c', fontSize: '0.56rem', lineHeight: 1.5 }}>
+              Scroll to <span style={{ color: '#c8a84b' }}>Gear Stats</span> on d4builds.gg → alles markieren → kopieren → hier einfügen.
+            </p>
+            <textarea
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder={'Helm\n27% Critical Strike Chance\n25% Lucky Hit Chance\n...\nChest Armor\nWillpower\n...'}
+              rows={6}
+              style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(200,168,75,0.14)', borderRadius: 3, padding: '7px 9px', color: '#c5b89a', fontSize: '0.62rem', outline: 'none', resize: 'vertical', fontFamily: 'monospace', lineHeight: 1.5 }}
+            />
+            <button onClick={handleScan} disabled={loading || !text.trim()}
+              style={{ fontFamily: D4, fontSize: '0.58rem', letterSpacing: '0.1em', background: loading ? 'rgba(200,168,75,0.06)' : 'linear-gradient(135deg,#2a1e0f,#c8a84b)', color: loading ? '#6b5e4a' : '#0a0a0f', border: '1px solid rgba(200,168,75,0.25)', borderRadius: 3, padding: '7px', cursor: loading ? 'not-allowed' : 'pointer' }}>
+              {loading ? '…' : '⚔ Parse Build Text'}
+            </button>
+          </div>
+        )}
 
         {(note || error) && (
           <p style={{ fontSize: '0.58rem', marginTop: 5, color: error ? '#ef4444' : '#22c55e', lineHeight: 1.4 }}>{error || note}</p>
