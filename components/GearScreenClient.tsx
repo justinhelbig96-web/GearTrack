@@ -277,8 +277,8 @@ function SlotTile({
   )
 }
 
-/* ─── Item Detail Panel ─────────────────────────────────────── */
-function ItemPanel({ slot, item, targetData, onClose }: {
+/* ─── UNUSED kept for compatibility ────────────────────────── */
+function _ItemPanelUnused({ slot, item, targetData, onClose }: {
   slot: GearSlot
   item: ParsedItem | null
   targetData?: { affixes: string[]; greaterAffixes: string[]; aspect?: string }
@@ -546,8 +546,8 @@ function Portrait() {
   )
 }
 
-/* ─── Build Import Panel ────────────────────────────────────── */
-function BuildImportPanel({
+/* ─── unused import panel stub ─────────────────────────────── */
+function _BuildImportPanelUnused({
   onImport, onClose,
 }: { onImport: (build: ParsedBuild) => void; onClose: () => void }) {
   const [url, setUrl] = useState('')
@@ -666,6 +666,214 @@ function BuildImportPanel({
   )
 }
 
+/* ─── All slots in order ────────────────────────────────────── */
+const ALL_SLOTS = [...LEFT_SLOTS, ...RIGHT_SLOTS, ...WEAPON_SLOTS]
+
+/* ─── Permanent Build Panel (right side) ───────────────────── */
+interface BuildPanelProps {
+  inventory: Partial<Record<GearSlot, SlotEntry>>
+  targetBuild: ParsedBuild
+  selectedSlot: GearSlot | null
+  onSelectSlot: (slot: GearSlot | null) => void
+  onImport: (build: ParsedBuild) => void
+  onClear: () => void
+}
+
+function BuildPanel({ inventory, targetBuild, selectedSlot, onSelectSlot, onImport, onClear }: BuildPanelProps) {
+  const [url, setUrl] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [note, setNote]   = useState('')
+
+  const hasBuild = Object.keys(targetBuild).length > 0
+
+  const norm = (s: string) => s.toLowerCase().replace(/[+\-%\d.,]/g, '').trim()
+
+  const affixMatch = (myItem: ParsedItem | undefined, req: string) => {
+    if (!myItem) return false
+    const tn = norm(req)
+    return myItem.affixes.some(a => { const b = norm(a.name ?? a.raw ?? ''); return b.includes(tn) || tn.includes(b) })
+  }
+
+  const getSlotMatch = (slot: GearSlot) => {
+    const build = targetBuild[slot]
+    if (!build || build.affixes.length === 0) return null
+    const myItem = inventory[slot]?.parsedItem
+    const matched = build.affixes.filter(r => affixMatch(myItem, r)).length
+    const total   = build.affixes.length
+    const color   = !myItem ? '#6b5e4a' : matched === total ? '#22c55e' : matched > 0 ? '#eab308' : '#ef4444'
+    return { matched, total, color, hasItem: !!myItem }
+  }
+
+  const handleScan = async () => {
+    if (!url.trim()) return
+    setLoading(true); setError(''); setNote('')
+    try {
+      const res  = await fetch('/api/parse-build', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error ?? 'Failed'); return }
+      if (data.slotCount === 0) { setError(data.note ?? 'No slot data found.'); return }
+      setNote(`✓ ${data.slotCount} slots loaded`)
+      onImport(data.build)
+    } catch { setError('Request failed') }
+    finally   { setLoading(false) }
+  }
+
+  return (
+    <div style={{
+      width: 380, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      borderLeft: '1px solid rgba(200,168,75,0.1)',
+      background: 'linear-gradient(180deg, rgba(6,4,12,0.97) 0%, rgba(3,2,8,0.99) 100%)',
+    }}>
+
+      {/* ── Header ── */}
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(200,168,75,0.08)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <span style={{ fontFamily: D4, color: '#c8a84b', fontSize: '0.68rem', letterSpacing: '0.22em', flex: 1 }}>BUILD TARGET</span>
+          {hasBuild && (
+            <button onClick={onClear} style={{ color: '#5a3a2a', fontSize: '0.58rem', fontFamily: D4, letterSpacing: '0.1em', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear</button>
+          )}
+        </div>
+
+        {/* URL input row */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input
+            value={url}
+            onChange={e => setUrl(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleScan()}
+            placeholder="d4builds.gg / maxroll.gg / mobalytics.gg…"
+            style={{ flex: 1, background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(200,168,75,0.14)', borderRadius: 3, padding: '6px 9px', color: '#c5b89a', fontSize: '0.62rem', outline: 'none' }}
+          />
+          <button
+            onClick={handleScan}
+            disabled={loading || !url.trim()}
+            style={{ fontFamily: D4, fontSize: '0.58rem', letterSpacing: '0.08em', background: loading ? 'rgba(200,168,75,0.06)' : 'linear-gradient(135deg,#2a1e0f,#c8a84b)', color: loading ? '#6b5e4a' : '#0a0a0f', border: '1px solid rgba(200,168,75,0.25)', borderRadius: 3, padding: '6px 11px', cursor: loading ? 'not-allowed' : 'pointer', flexShrink: 0 }}
+          >
+            {loading ? '…' : '⚔ Scan'}
+          </button>
+        </div>
+
+        {(note || error) && (
+          <p style={{ fontSize: '0.58rem', marginTop: 5, color: error ? '#ef4444' : '#22c55e', lineHeight: 1.4 }}>{error || note}</p>
+        )}
+      </div>
+
+      {/* ── Slot list ── */}
+      {!hasBuild ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: 0.35 }}>
+          <p style={{ color: '#c8a84b', fontFamily: D4, fontSize: '0.58rem', letterSpacing: '0.15em', textAlign: 'center', lineHeight: 1.8 }}>
+            Paste a build URL to start<br />comparing your gear
+          </p>
+        </div>
+      ) : (
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {ALL_SLOTS.map(({ slot, label }) => {
+            const build   = targetBuild[slot]
+            const myItem  = inventory[slot]?.parsedItem
+            const match   = getSlotMatch(slot)
+            const isSel   = selectedSlot === slot
+
+            return (
+              <div key={slot}>
+                {/* ── Slot row ── */}
+                <div
+                  onClick={() => onSelectSlot(isSel ? null : slot)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px',
+                    cursor: 'pointer',
+                    borderLeft: isSel ? '2px solid rgba(200,168,75,0.6)' : '2px solid transparent',
+                    background: isSel ? 'rgba(200,168,75,0.05)' : 'transparent',
+                    transition: 'background 0.12s',
+                    borderBottom: '1px solid rgba(255,255,255,0.025)',
+                  }}
+                >
+                  {/* Slot label + item name */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: D4, fontSize: '0.5rem', color: isSel ? '#c8a84b' : '#4a3c28', letterSpacing: '0.18em', textTransform: 'uppercase' }}>{label}</div>
+                    {build?.itemName && (
+                      <div style={{ fontSize: '0.62rem', color: '#a09070', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{build.itemName}</div>
+                    )}
+                    {!build && (
+                      <div style={{ fontSize: '0.58rem', color: '#2a2018' }}>No build data</div>
+                    )}
+                  </div>
+
+                  {/* Match badge */}
+                  {match && (
+                    <div style={{ flexShrink: 0, fontFamily: D4, fontSize: '0.55rem', color: match.color, background: `${match.color}18`, border: `1px solid ${match.color}35`, borderRadius: 3, padding: '2px 7px', letterSpacing: '0.05em' }}>
+                      {match.hasItem ? `${match.matched}/${match.total}` : `0/${match.total}`}
+                    </div>
+                  )}
+                  <span style={{ color: '#3a2e1c', fontSize: '0.6rem' }}>{isSel ? '▲' : '▼'}</span>
+                </div>
+
+                {/* ── Expanded comparison ── */}
+                {isSel && (
+                  <div style={{ margin: '0 10px 6px', padding: '10px 12px', background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(200,168,75,0.1)', borderRadius: 3 }}>
+
+                    {/* My item meta */}
+                    {myItem && (
+                      <div style={{ display: 'flex', gap: 10, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        {myItem.itemName && <span style={{ color: '#c8a84b', fontFamily: D4, fontSize: '0.6rem' }}>{myItem.itemName}</span>}
+                        {myItem.itemPower && <span style={{ color: '#6b5e4a', fontSize: '0.58rem' }}>P{myItem.itemPower}</span>}
+                        {myItem.rarity && <span style={{ color: rarityColor(myItem.rarity), fontSize: '0.58rem', textTransform: 'uppercase' }}>{myItem.rarity}</span>}
+                        {myItem.masterworkLevel > 0 && <span style={{ color: '#a78bfa', fontSize: '0.58rem' }}>MW{myItem.masterworkLevel}</span>}
+                      </div>
+                    )}
+
+                    {/* Side-by-side */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+
+                      {/* YOUR affixes */}
+                      <div>
+                        <p style={{ fontFamily: D4, fontSize: '0.5rem', color: '#4a3c28', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 6 }}>Your Stats</p>
+                        {!myItem ? (
+                          <p style={{ color: '#3a2e1c', fontSize: '0.6rem' }}>Not scanned yet</p>
+                        ) : myItem.affixes.length === 0 ? (
+                          <p style={{ color: '#3a2e1c', fontSize: '0.6rem' }}>No affixes</p>
+                        ) : myItem.affixes.map((a, i) => {
+                          const hit  = build?.affixes.some(r => { const tn = norm(r); const b = norm(a.name ?? a.raw ?? ''); return b.includes(tn) || tn.includes(b) }) ?? false
+                          const isGA = myItem.greaterAffixes.includes(a.name ?? '')
+                          return (
+                            <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'flex-start' }}>
+                              <span style={{ fontSize: '0.58rem', flexShrink: 0, marginTop: 1, color: isGA ? '#c8a84b' : hit ? '#22c55e' : '#5a4a30' }}>{isGA ? '✦' : '•'}</span>
+                              <span style={{ fontSize: '0.61rem', lineHeight: 1.35, color: hit ? '#22c55e' : '#b0a080' }}>
+                                {a.raw ?? `${a.name ?? ''} ${a.valueText ?? ''}`.trim()}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* BUILD affixes */}
+                      <div>
+                        <p style={{ fontFamily: D4, fontSize: '0.5rem', color: '#4a3c28', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 6 }}>Build Stats</p>
+                        {!build || build.affixes.length === 0 ? (
+                          <p style={{ color: '#3a2e1c', fontSize: '0.6rem' }}>No affix data</p>
+                        ) : build.affixes.map((req, i) => {
+                          const found = affixMatch(myItem, req)
+                          const isGA  = build.greaterAffixes.includes(req)
+                          return (
+                            <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'flex-start' }}>
+                              <span style={{ fontSize: '0.6rem', flexShrink: 0, marginTop: 1, color: found ? '#22c55e' : '#ef4444' }}>{found ? '✓' : '✗'}</span>
+                              {isGA && <span style={{ fontSize: '0.52rem', color: '#c8a84b', flexShrink: 0, marginTop: 2 }}>✦</span>}
+                              <span style={{ fontSize: '0.61rem', lineHeight: 1.35, color: found ? '#c5b89a' : '#ef4444' }}>{req}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ─── Slot inventory state ──────────────────────────────────── */
 interface SlotEntry {
   itemId?: string
@@ -691,7 +899,6 @@ export default function GearScreenClient({
   const [inventory, setInventory] = useState<Partial<Record<GearSlot, SlotEntry>>>(initialInventory)
   const [targetBuild, setTargetBuild] = useState<ParsedBuild>({})
   const [selectedSlot, setSelectedSlot] = useState<GearSlot | null>(null)
-  const [buildPanelOpen, setBuildPanelOpen] = useState(false)
 
   const handleUpload = useCallback(async (slot: GearSlot, file: File) => {
     setInventory(prev => ({ ...prev, [slot]: { ...prev[slot], uploading: true } }))
@@ -728,10 +935,7 @@ export default function GearScreenClient({
     }
   }, [inventory, profileId])
 
-  const handleImportBuild = (build: ParsedBuild) => {
-    setTargetBuild(build)
-    setBuildPanelOpen(false)
-  }
+  const handleImportBuild = (build: ParsedBuild) => setTargetBuild(build)
 
   const sp = (slot: GearSlot, label: string) => ({
     slot, label,
@@ -743,122 +947,80 @@ export default function GearScreenClient({
     targetGreaterAffixes:  targetBuild[slot]?.greaterAffixes,
     targetItemName:        targetBuild[slot]?.itemName,
     onUpload:              handleUpload,
-    onSelect:              (s: GearSlot) => { setSelectedSlot(s); setBuildPanelOpen(false) },
+    onSelect:              (s: GearSlot) => setSelectedSlot(s),
   })
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'radial-gradient(ellipse at 50% 110%, #0e0408 0%, #04030a 55%, #010106 100%)' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'radial-gradient(ellipse at 50% 110%, #0e0408 0%, #04030a 55%, #010106 100%)', overflow: 'hidden' }}>
 
       {/* ── Top bar ── */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 24px', height: 52, flexShrink: 0,
-        background: 'rgba(0,0,0,0.55)',
+        padding: '0 20px', height: 48, flexShrink: 0,
+        background: 'rgba(0,0,0,0.6)',
         borderBottom: '1px solid rgba(200,168,75,0.08)',
-        backdropFilter: 'blur(12px)',
       }}>
-        <span style={{ fontFamily: D4, color: '#c8a84b', fontSize: '0.95rem', letterSpacing: '0.35em' }}>GearGap</span>
-
+        <span style={{ fontFamily: D4, color: '#c8a84b', fontSize: '0.9rem', letterSpacing: '0.35em' }}>GearGap</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button
-            onClick={() => { setBuildPanelOpen(true); setSelectedSlot(null) }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 7, padding: '5px 14px',
-              fontFamily: D4, fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase',
-              background: 'rgba(200,168,75,0.07)', border: '1px solid rgba(200,168,75,0.22)',
-              color: '#c8a84b', cursor: 'pointer', borderRadius: 3, transition: 'all 0.18s',
-            }}
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Import Build
-          </button>
-
-          {Object.keys(targetBuild).length > 0 && (
-            <span style={{ background: 'rgba(34,197,94,0.09)', border: '1px solid rgba(34,197,94,0.28)', borderRadius: 3, padding: '3px 9px', fontSize: '0.58rem', color: '#22c55e', fontFamily: D4, letterSpacing: '0.1em' }}>
-              Build loaded
-            </span>
-          )}
-
-          <span style={{ color: '#3a2e1c', fontSize: '0.68rem', fontFamily: D4, letterSpacing: '0.1em' }}>
-            {name ?? battleTag}
-          </span>
-
+          <span style={{ color: '#3a2e1c', fontSize: '0.65rem', fontFamily: D4, letterSpacing: '0.1em' }}>{name ?? battleTag}</span>
           <a href="/api/auth/logout"
-            style={{ color: '#2e2014', fontSize: '0.62rem', fontFamily: D4, letterSpacing: '0.12em', textDecoration: 'none', transition: 'color 0.18s' }}
+            style={{ color: '#2e2014', fontSize: '0.6rem', fontFamily: D4, letterSpacing: '0.12em', textDecoration: 'none' }}
             onMouseEnter={e => (e.currentTarget.style.color = '#c84b1a')}
             onMouseLeave={e => (e.currentTarget.style.color = '#2e2014')}
-          >
-            Logout
-          </a>
+          >Logout</a>
         </div>
       </div>
 
-      {/* ── Character Screen ── */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', overflow: 'auto' }}>
+      {/* ── Main split layout ── */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* 3-column D4 layout — stretch aligns all columns to the tallest (left col) */}
-        <div style={{ display: 'flex', alignItems: 'stretch', gap: 20 }}>
+        {/* LEFT: Your character screen */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 16px', overflow: 'auto' }}>
+          <div>
+            {/* Section label */}
+            <p style={{ fontFamily: D4, fontSize: '0.52rem', color: '#3a2e1c', letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 }}>Your Gear</p>
 
-          {/* Left column: 5 slots evenly spaced */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: GL }}>
-            {LEFT_SLOTS.map(({ slot, label }) => (
-              <SlotTile key={slot} {...sp(slot, label)} />
-            ))}
-          </div>
-
-          {/* Center: portrait fills left column height, weapons below */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: CW }}>
-            <Portrait />
-            <div style={{ display: 'flex', gap: 12 }}>
-              {WEAPON_SLOTS.map(({ slot, label }) => (
-                <SlotTile key={slot} {...sp(slot, label)} />
-              ))}
+            {/* 3-column D4 layout */}
+            <div style={{ display: 'flex', alignItems: 'stretch', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: GL }}>
+                {LEFT_SLOTS.map(({ slot, label }) => <SlotTile key={slot} {...sp(slot, label)} />)}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, width: CW }}>
+                <Portrait />
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {WEAPON_SLOTS.map(({ slot, label }) => <SlotTile key={slot} {...sp(slot, label)} />)}
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: GR, paddingTop: PR }}>
+                {RIGHT_SLOTS.map(({ slot, label }) => <SlotTile key={slot} {...sp(slot, label)} />)}
+              </div>
             </div>
-          </div>
 
-          {/* Right column: Amulet at neck, Rings at body level */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: GR, paddingTop: PR }}>
-            {RIGHT_SLOTS.map(({ slot, label }) => (
-              <SlotTile key={slot} {...sp(slot, label)} />
-            ))}
+            {Object.values(inventory).every(v => !v?.parsedItem) && (
+              <p style={{ color: '#2a1e10', fontSize: '0.55rem', fontFamily: D4, letterSpacing: '0.18em', textTransform: 'uppercase', textAlign: 'center', marginTop: 14 }}>
+                Click any slot to upload a gear screenshot
+              </p>
+            )}
           </div>
-
         </div>
 
-        {/* Hint when nothing uploaded */}
-        {Object.values(inventory).every(v => !v?.parsedItem) && (
-          <div style={{ position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', pointerEvents: 'none' }}>
-            <p style={{ color: '#2a1e10', fontSize: '0.6rem', fontFamily: D4, letterSpacing: '0.22em', textTransform: 'uppercase' }}>
-              Click any slot to upload a gear screenshot
-            </p>
-          </div>
-        )}
+        {/* RIGHT: Permanent build panel */}
+        <BuildPanel
+          inventory={inventory}
+          targetBuild={targetBuild}
+          selectedSlot={selectedSlot}
+          onSelectSlot={setSelectedSlot}
+          onImport={handleImportBuild}
+          onClear={() => { setTargetBuild({}); setSelectedSlot(null) }}
+        />
+
       </div>
 
-      {/* ── Side panels ── */}
-      {selectedSlot && !buildPanelOpen && (
+      {/* unused refs to silence TS */}
+      {false && (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => setSelectedSlot(null)} />
-          <ItemPanel
-            slot={selectedSlot}
-            item={inventory[selectedSlot]?.parsedItem ?? null}
-            targetData={targetBuild[selectedSlot]}
-            onClose={() => setSelectedSlot(null)}
-          />
-        </>
-      )}
-
-      {buildPanelOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setBuildPanelOpen(false)} />
-          <BuildImportPanel
-            onImport={handleImportBuild}
-            onClose={() => setBuildPanelOpen(false)}
-          />
+          <_ItemPanelUnused slot={'HELMET'} item={null} onClose={() => {}} />
+          <_BuildImportPanelUnused onImport={() => {}} onClose={() => {}} />
         </>
       )}
 
