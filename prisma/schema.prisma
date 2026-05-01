@@ -15,28 +15,18 @@ datasource db {
 // ─────────────────────────────────────────────
 
 model User {
-  id            String        @id @default(cuid())
-  email         String        @unique
-  passwordHash  String
-  name          String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id          String   @id @default(cuid())
+  blizzardId  String   @unique   // Blizzard sub/account ID
+  battleTag   String             // e.g. "Player#1234"
+  name        String?            // Display name (part before #)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  gearProfiles  GearProfile[]
-  builds        Build[]
-  items         Item[]
+  gearProfiles GearProfile[]
+  builds       Build[]
+  items        Item[]
 
   @@map("users")
-}
-
-model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@map("sessions")
 }
 
 // ─────────────────────────────────────────────

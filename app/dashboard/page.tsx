@@ -55,7 +55,7 @@ export default async function DashboardPage() {
         {/* Welcome */}
         <header className="mb-8">
           <h1 className="text-d4-gold font-diablo text-2xl tracking-widest">
-            Welcome, {user.name ?? user.email}
+            Welcome, {user.name ?? user.battleTag}
           </h1>
           <p className="text-d4-muted text-sm mt-1">Your Diablo 4 gear companion</p>
         </header>
