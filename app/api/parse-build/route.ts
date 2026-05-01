@@ -41,7 +41,8 @@ const SLOT_KEYWORDS: Record<string, GearSlot> = {
 }
 
 /** Try to detect which slot a text block belongs to */
-function detectSlot(text: string): GearSlot | null {
+function detectSlot(text: string | undefined | null): GearSlot | null {
+  if (!text) return null
   const lower = text.toLowerCase()
   for (const [kw, slot] of Object.entries(SLOT_KEYWORDS)) {
     if (lower.includes(kw)) return slot
@@ -74,8 +75,8 @@ function isLikelyGreaterAffix(affix: string): boolean {
 function parseGenericText(text: string): ParsedBuild {
   const build: ParsedBuild = {}
 
-  // Split into chunks by known slot headers
-  const slotPattern = /\b(helm(?:et)?|chest\s*(?:armor)?|gloves?|pants?|trousers|boots?|amulet|necklace|ring\s*[12]|(main|off)\s*hand|weapon|sword|staff|focus|shield|dagger)\b/gi
+  // Split into chunks by known slot headers — use non-capturing inner groups to avoid undefined in parts
+  const slotPattern = /\b(helm(?:et)?|chest\s*(?:armor)?|gloves?|pants?|trousers|boots?|amulet|necklace|ring\s*[12]|(?:main|off)\s*hand|weapon|sword|staff|focus|shield|dagger)\b/gi
   const parts = text.split(slotPattern)
 
   let currentSlot: GearSlot | null = null
@@ -155,7 +156,9 @@ function parseD4BuildsHTML(html: string): ParsedBuild | null {
 
   for (let i = 0; i < tokens.length; i++) {
     const isImg = i % 2 === 1
-    const val = tokens[i].trim()
+    const raw = tokens[i]
+    if (raw == null) continue
+    const val = raw.trim()
     if (!val) continue
 
     if (isImg) {
