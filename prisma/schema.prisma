@@ -1,0 +1,166 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// Auth
+// ─────────────────────────────────────────────
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  passwordHash  String
+  name          String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  gearProfiles  GearProfile[]
+  builds        Build[]
+  items         Item[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("sessions")
+}
+
+// ─────────────────────────────────────────────
+// Items
+// ─────────────────────────────────────────────
+
+enum ItemRarity {
+  NORMAL
+  MAGIC
+  RARE
+  LEGENDARY
+  UNIQUE
+}
+
+enum GearSlot {
+  HELMET
+  CHEST
+  GLOVES
+  PANTS
+  BOOTS
+  AMULET
+  RING1
+  RING2
+  MAIN_HAND
+  OFF_HAND
+}
+
+model Item {
+  id              String     @id @default(cuid())
+  userId          String
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  slot            GearSlot
+  itemName        String?
+  itemPower       Int?
+  rarity          ItemRarity?
+
+  // OCR / upload metadata
+  imageUrl        String?
+  ocrRawText      String?
+  ocrConfidence   Float?
+  parseStatus     String     @default("pending") // pending | parsed | reviewed
+
+  // Structured data stored as JSON
+  affixes         Json       @default("[]")   // Affix[]
+  greaterAffixes  Json       @default("[]")   // string[] — names of affixes that are Greater
+  aspect          Json?                       // { name: string; effect: string }
+  temperingAffixes Json      @default("[]")  // Affix[]
+  masterworkLevel Int        @default(0)
+  gem             String?
+  rune            String?
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Profile back-relations
+  helmetProfile   GearProfile? @relation("HelmetItem")
+  chestProfile    GearProfile? @relation("ChestItem")
+  glovesProfile   GearProfile? @relation("GlovesItem")
+  pantsProfile    GearProfile? @relation("PantsItem")
+  bootsProfile    GearProfile? @relation("BootsItem")
+  amuletProfile   GearProfile? @relation("AmuletItem")
+  ring1Profile    GearProfile? @relation("Ring1Item")
+  ring2Profile    GearProfile? @relation("Ring2Item")
+  mainHandProfile GearProfile? @relation("MainHandItem")
+  offHandProfile  GearProfile? @relation("OffHandItem")
+
+  @@map("items")
+}
+
+// ─────────────────────────────────────────────
+// Gear Profiles
+// ─────────────────────────────────────────────
+
+model GearProfile {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  class     String?
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  helmetId   String? @unique
+  chestId    String? @unique
+  glovesId   String? @unique
+  pantsId    String? @unique
+  bootsId    String? @unique
+  amuletId   String? @unique
+  ring1Id    String? @unique
+  ring2Id    String? @unique
+  mainHandId String? @unique
+  offHandId  String? @unique
+
+  helmet   Item? @relation("HelmetItem",   fields: [helmetId],   references: [id])
+  chest    Item? @relation("ChestItem",    fields: [chestId],    references: [id])
+  gloves   Item? @relation("GlovesItem",   fields: [glovesId],   references: [id])
+  pants    Item? @relation("PantsItem",    fields: [pantsId],    references: [id])
+  boots    Item? @relation("BootsItem",    fields: [bootsId],    references: [id])
+  amulet   Item? @relation("AmuletItem",   fields: [amuletId],   references: [id])
+  ring1    Item? @relation("Ring1Item",    fields: [ring1Id],    references: [id])
+  ring2    Item? @relation("Ring2Item",    fields: [ring2Id],    references: [id])
+  mainHand Item? @relation("MainHandItem", fields: [mainHandId], references: [id])
+  offHand  Item? @relation("OffHandItem",  fields: [offHandId],  references: [id])
+
+  @@map("gear_profiles")
+}
+
+// ─────────────────────────────────────────────
+// Builds
+// ─────────────────────────────────────────────
+
+model Build {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  class       String?
+  sourceUrl   String?   // e.g. Maxroll link
+  rawText     String?   // pasted text from Maxroll etc.
+  slots       Json     @default("{}") // BuildSlotData keyed by GearSlot
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("builds")
+}

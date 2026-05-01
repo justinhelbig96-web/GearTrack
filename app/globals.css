@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Georgia', serif;
+    background-color: #0a0a0f;
+    color: #c5b89a;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #12111a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #3d2e1e;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #c8a84b60;
+  }
+}
+
+@layer components {
+  /* Diablo-style ornamental divider */
+  .d4-divider {
+    @apply w-full h-px bg-gradient-to-r from-transparent via-d4-gold/40 to-transparent my-3;
+  }
+
+  /* Slot click ring animation */
+  .slot-activate {
+    animation: slotPulse 0.3s ease-out;
+  }
+
+  @keyframes slotPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(200,168,75,0.6); }
+    100% { box-shadow: 0 0 0 8px rgba(200,168,75,0); }
+  }
+
+  /* Rarity text glow */
+  .rarity-legendary-text {
+    text-shadow: 0 0 8px rgba(200,100,0,0.7);
+  }
+  .rarity-unique-text {
+    text-shadow: 0 0 8px rgba(212,175,55,0.7);
+  }
+}
